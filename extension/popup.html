@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BSG AI Copilot</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+
+<body>
+
+    <div id="app" class="app-shell">
+
+        <header class="app-header">
+            <div class="header-main">
+                <div>
+                    <h1 class="app-title">BSG AI Copilot</h1>
+                    <p class="app-subtitle">Strategy assistant for Company H</p>
+                </div>
+
+                <div class="simulation-badge">
+                    <span id="headerCompany">H</span>
+                    <span class="badge-divider">|</span>
+                    <span id="headerYear">Y12</span>
+                </div>
+            </div>
+        </header>
+
+        <nav class="app-nav" aria-label="BSG Copilot sections">
+            <button type="button" class="nav-button active" data-view="chat">
+                Chat
+            </button>
+
+            <button type="button" class="nav-button" data-view="data">
+                Data
+            </button>
+
+            <button type="button" class="nav-button" data-view="currentRound">
+                Current Round
+            </button>
+        </nav>
+
+        <main class="app-main">
+
+            <section id="chatView" class="app-view active" data-view-panel="chat">
+                <div id="chatMessages" class="chat-messages">
+                    <div class="welcome-message">
+                        <h2>Ask BSG Copilot</h2>
+                        <p>
+                            Analyze competitors,
+                            financial performance,
+                            industry conditions,
+                            and strategic decisions.
+                        </p>
+                    </div>
+                </div>
+
+                <div id="agentStatus" class="agent-status" hidden>
+                    BSG Copilot is analyzing...
+                </div>
+
+                <div class="chat-composer">
+                    <textarea id="agentQuestion" rows="3"
+                        placeholder="Ask about strategy, competitors, finances..."></textarea>
+
+                    <div class="composer-actions">
+                        <button id="clearChat" type="button" class="secondary-button">
+                            Clear
+                        </button>
+
+                        <button id="askAgent" type="button" class="primary-button">
+                            Send
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <section id="dataView" class="app-view" data-view-panel="data" hidden>
+                <div class="section-header">
+                    <div>
+                        <h2>Historical Data</h2>
+                        <p>
+                            Data currently available
+                            to the BSG AI agent.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="data-card">
+                
+                    <h3>
+                        Simulation Summary
+                    </h3>
+                
+                    <div id="simulationSummary" class="simulation-summary">
+                        Loading simulation data...
+                    </div>
+                
+                </div>
+                
+
+                <div class="info-grid">
+                    <div class="info-card">
+                        <span class="info-label">Industry</span>
+                        <strong id="dataIndustry">42</strong>
+                    </div>
+
+                    <div class="info-card">
+                        <span class="info-label">Company</span>
+                        <strong id="dataCompany">H</strong>
+                    </div>
+
+                    <div class="info-card">
+                        <span class="info-label">Phase</span>
+                        <strong id="dataPhase">Practice</strong>
+                    </div>
+
+                    <div class="info-card">
+                        <span class="info-label">Current Year</span>
+                        <strong id="dataCurrentYear">12</strong>
+                    </div>
+                </div>
+
+                <div class="data-section">
+                    <h3>Import BSG Data</h3>
+                    <p>
+                        Add new FIR, CIR, or COR CSV exports
+                        as the simulation progresses.
+                    </p>
+
+                    <div class="import-actions">
+                        <button id="addCSV" type="button" class="secondary-button">
+                            Add CSV Files
+                        </button>
+
+                        <button id="importCSV" type="button" class="primary-button">
+                            Import CSV
+                        </button>
+
+                        <button id="clearQueue" type="button" class="secondary-button">
+                            Clear Selected Files
+                        </button>
+                    </div>
+
+                    <input id="csvFiles" type="file" accept=".csv" multiple hidden>
+                    <div id="selectedFiles" class="selected-files">
+                        No files selected.
+                    </div>
+                    <div id="importStatus" class="import-status"></div>
+                </div>
+
+                <div class="data-section">
+                    <h3>Loaded Historical Data</h3>
+                    <div id="loadedData" class="loaded-data-list">
+                        No historical data loaded.
+                    </div>
+                </div>
+
+                <div class="data-section">
+                    <h3>Report Availability</h3>
+                    <div id="reportAvailability" class="report-list">
+                        Loading...
+                    </div>
+                </div>
+
+                <details class="developer-panel">
+                    <summary>Raw Available Data</summary>
+                    <div class="developer-panel-content">
+                        <button id="refreshAvailableData" type="button" class="secondary-button">
+                            Refresh
+                        </button>
+
+                        <pre id="availableDataOutput" class="raw-output">No data loaded yet.</pre>
+                    </div>
+                </details>
+
+                <details class="developer-panel">
+                    <summary>Data Maintenance</summary>
+                    <div class="developer-panel-content">
+                        <p>
+                            Clear all imported historical BSG data
+                            stored by the extension.
+                        </p>
+
+                        <button id="clearHistoricalData" type="button" class="danger-button">
+                            Clear Imported Data
+                        </button>
+                    </div>
+                </details>
+            </section>
+
+            <section id="currentRoundView" class="app-view" data-view-panel="currentRound" hidden>
+                <div class="section-header">
+                    <div>
+                        <h2>Current Round</h2>
+                        <p>
+                            Live BSG decision-page
+                            context will appear here.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="data-section">
+                    <h3>Current BSG Page</h3>
+                    <p>
+                        Extract data from the currently
+                        open BSG page.
+                    </p>
+
+                    <button id="extract" type="button" class="primary-button">
+                        Extract Current Page
+                    </button>
+
+                    <button id="saveFinalSnapshot" type="button" class="primary-button">
+                        Save Final Snapshot
+                    </button>
+
+                    <div id="extractStatus" class="extract-status"></div>
+                    
+                </div>
+
+                <div class="current-round-card">
+                    <div class="round-row">
+                        <span>Active Year</span>
+                        <strong id="roundYear">12</strong>
+                    </div>
+
+                    <div class="round-row">
+                        <span>Current Page</span>
+                        <strong id="currentPageName">Not captured</strong>
+                    </div>
+
+                    <div class="round-row">
+                        <span>Page Data</span>
+                        <strong id="currentPageStatus">Not available</strong>
+                    </div>
+                </div>
+
+                <div class="empty-state">
+                    <h3>Live page analysis coming next</h3>
+                    <p>
+                        Once current-page extraction
+                        is connected, BSG Copilot will
+                        combine live Year 12 decisions
+                        with historical FIR, CIR, and
+                        COR evidence.
+                    </p>
+                </div>
+
+                <details class="developer-panel">
+                    <summary>Extracted Page Data</summary>
+                    <div class="developer-panel-content">
+                        <pre id="output" class="raw-output">No page data extracted yet.</pre>
+                    </div>
+                </details>
+            </section>
+
+        </main>
+
+        <footer class="app-footer">
+            <span id="backendStatus">
+                Backend status unknown
+            </span>
+        </footer>
+
+    </div>
+
+    <script src="bsgDataAccess.js"></script>
+    <script src="bsgAgentTools.js"></script>
+    <script src="bsgAgentClient.js"></script>
+    <script src="popup.js"></script>
+
+</body>
+
+</html>

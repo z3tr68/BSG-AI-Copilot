@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "BSG AI Strategy Copilot",
+  "version": "0.2.0",
+  "description": "Extract and analyze BSG simulation data.",
+
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting"
+  ],
+
+  "host_permissions": [
+    "*://*.bsg-online.com/*"
+  ],
+
+  "action": {
+    "default_popup": "popup.html"
+  },
+
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.bsg-online.com/*"
+      ],
+      "js": [
+        "content.js"
+      ]
+    }
+  ]
+}

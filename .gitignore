@@ -1,0 +1,24 @@
+# Environment variables / secrets
+.env
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local backups / recovery files
+backup.json
+*.backup.json
+industry_42_year10_starting_data_normalized.json
+*.industry_42_year10_starting_data_normalized.json
+
+# Logs
+*.log

@@ -1,0 +1,649 @@
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    width: 440px;
+    height: 620px;
+    overflow: hidden;
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
+    background: #f5f6f8;
+    color: #1f2937;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+}
+
+
+/* =========================
+   APP SHELL
+   ========================= */
+
+.app-shell {
+    display: flex;
+    flex-direction: column;
+
+    width: 100%;
+    height: 100%;
+}
+
+
+/* =========================
+   HEADER
+   ========================= */
+
+.app-header {
+    flex-shrink: 0;
+
+    padding: 14px 16px 10px;
+
+    background: white;
+
+    border-bottom:
+        1px solid #e5e7eb;
+}
+
+.app-header h1 {
+    margin: 0;
+
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.app-subtitle {
+    margin: 4px 0 0;
+
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.header-meta {
+    margin-top: 8px;
+
+    font-size: 12px;
+    font-weight: 600;
+
+    color: #374151;
+}
+
+
+/* =========================
+   NAVIGATION
+   ========================= */
+
+.app-nav {
+    flex-shrink: 0;
+
+    display: flex;
+
+    gap: 4px;
+
+    padding: 8px;
+
+    background: white;
+
+    border-bottom:
+        1px solid #e5e7eb;
+}
+
+.nav-button {
+    flex: 1;
+
+    border: none;
+
+    background: transparent;
+
+    padding: 8px 10px;
+
+    border-radius: 6px;
+
+    font-size: 13px;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    color: #4b5563;
+}
+
+.nav-button:hover {
+    background: #f3f4f6;
+}
+
+.nav-button.active {
+    background: #e5e7eb;
+    color: #111827;
+}
+
+
+/* =========================
+   MAIN CONTENT
+   ========================= */
+
+.app-main {
+    flex: 1;
+
+    min-height: 0;
+
+    overflow: hidden;
+}
+
+.app-view {
+    height: 100%;
+
+    overflow-y: auto;
+
+    padding: 14px;
+}
+
+.app-view[hidden] {
+    display: none !important;
+}
+
+
+/* =========================
+   SECTION HEADINGS
+   ========================= */
+
+.section-header {
+    margin-bottom: 14px;
+}
+
+.section-header h2 {
+    margin: 0 0 5px;
+
+    font-size: 17px;
+}
+
+.section-header p {
+    margin: 0;
+
+    font-size: 12px;
+
+    line-height: 1.45;
+
+    color: #6b7280;
+}
+
+
+/* =========================
+   CARDS / DATA SECTIONS
+   ========================= */
+
+.data-section,
+.current-round-card {
+    margin-bottom: 12px;
+
+    padding: 12px;
+
+    background: white;
+
+    border:
+        1px solid #e5e7eb;
+
+    border-radius: 8px;
+}
+
+.data-section h3 {
+    margin: 0 0 8px;
+
+    font-size: 14px;
+}
+
+.data-section p {
+    margin: 0 0 10px;
+
+    font-size: 12px;
+
+    line-height: 1.45;
+
+    color: #6b7280;
+}
+
+.data-card {
+    margin-bottom: 14px;
+    padding: 12px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+}
+
+.data-card h3 {
+    margin:
+        0 0 10px;
+    font-size: 13px;
+}
+
+.summary-grid {
+    display: grid;
+    grid-template-columns:
+        1fr 1fr;
+    gap:
+        6px 12px;
+    font-size: 12px;
+}
+
+.summary-label {
+    color: #6b7280;
+}
+
+.summary-value {
+    font-weight: 600;
+    text-align: right;
+}
+
+.report-table {
+    width: 100%;
+    font-size: 12px;
+}
+
+.report-row {
+    display: grid;
+    grid-template-columns:
+        1.5fr 1fr 1fr 1fr;
+    gap: 8px;
+    padding:
+        6px 0;
+    border-bottom:
+        1px solid #f0f1f3;
+}
+
+.report-row:last-child {
+    border-bottom: none;
+}
+
+.report-header {
+    font-weight: 700;
+    color: #6b7280;
+}
+
+/* =========================
+   BUTTONS
+   ========================= */
+
+button {
+    font-family: inherit;
+}
+
+.primary-button,
+.secondary-button,
+.danger-button {
+    border-radius: 6px;
+
+    padding: 8px 12px;
+
+    font-size: 12px;
+
+    cursor: pointer;
+}
+
+.primary-button {
+    border: none;
+
+    background: #111827;
+
+    color: white;
+}
+
+.primary-button:hover {
+    background: #1f2937;
+}
+
+.secondary-button {
+    border:
+        1px solid #d1d5db;
+
+    background: white;
+
+    color: #374151;
+}
+
+.secondary-button:hover {
+    background: #f9fafb;
+}
+
+.danger-button {
+    border:
+        1px solid #dc2626;
+
+    background: white;
+
+    color: #dc2626;
+}
+
+.danger-button:hover {
+    background: #fef2f2;
+}
+
+.import-actions {
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 8px;
+}
+
+button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+
+/* =========================
+   CHAT
+   ========================= */
+
+#chatView:not([hidden]) {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+#chatMessages {
+    flex: 1;
+
+    min-height: 0;
+
+    overflow-y: auto;
+
+    padding-bottom: 12px;
+}
+
+#agentAnswer {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+
+    margin: 0;
+
+    font-family: inherit;
+
+    font-size: 12px;
+
+    line-height: 1.5;
+}
+
+.chat-composer {
+    flex-shrink: 0;
+
+    padding-top: 10px;
+
+    background: #f5f6f8;
+
+    border-top:
+        1px solid #e5e7eb;
+}
+
+#agentQuestion {
+    width: 100%;
+
+    min-height: 68px;
+    max-height: 120px;
+
+    resize: vertical;
+
+    padding: 10px;
+
+    border:
+        1px solid #d1d5db;
+
+    border-radius: 8px;
+
+    font-family: inherit;
+
+    font-size: 13px;
+
+    outline: none;
+
+    background: white;
+}
+
+#agentQuestion:focus {
+    border-color: #6b7280;
+}
+
+.composer-actions {
+    display: flex;
+
+    justify-content: flex-end;
+
+    gap: 8px;
+
+    margin-top: 8px;
+}
+
+.chat-message {
+    margin-bottom: 14px;
+}
+
+.message-role {
+    margin-bottom: 4px;
+
+    font-size: 11px;
+    font-weight: 700;
+
+    color: #6b7280;
+}
+
+.message-content {
+    padding: 10px 12px;
+
+    border-radius: 10px;
+
+    font-size: 12px;
+    line-height: 1.5;
+
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.user-message {
+    display: flex;
+    flex-direction: column;
+
+    align-items: flex-end;
+}
+
+.user-message .message-role {
+    text-align: right;
+}
+
+.user-message .message-content {
+    max-width: 85%;
+
+    background: #111827;
+
+    color: white;
+}
+
+.assistant-message {
+    display: flex;
+    flex-direction: column;
+
+    align-items: flex-start;
+}
+
+.assistant-message .message-content {
+    max-width: 95%;
+
+    background: white;
+
+    border:
+        1px solid #e5e7eb;
+
+    color: #1f2937;
+}
+
+
+/* =========================
+   LOADED DATA
+   ========================= */
+
+.loaded-data-list {
+    font-size: 12px;
+
+    line-height: 1.5;
+}
+
+.loaded-item {
+    margin-top: 8px;
+
+    padding: 8px;
+
+    background: #f9fafb;
+
+    border-radius: 6px;
+}
+
+
+/* =========================
+   CURRENT ROUND
+   ========================= */
+
+.round-row {
+    display: flex;
+
+    justify-content: space-between;
+
+    gap: 12px;
+
+    padding: 7px 0;
+
+    border-bottom:
+        1px solid #f3f4f6;
+
+    font-size: 12px;
+}
+
+.round-row:last-child {
+    border-bottom: none;
+}
+
+.extract-status {
+    margin-top: 10px;
+    font-size: 11px;
+    color: #6b7280;
+}
+
+.extract-status.success {
+    color: #15803d;
+}
+
+.extract-status.error {
+    color: #dc2626;
+}
+
+#saveFinalSnapshot {
+    margin-left: 6px;
+}
+
+
+/* =========================
+   DEVELOPER PANELS
+   ========================= */
+
+.developer-panel {
+    margin-bottom: 12px;
+
+    padding: 10px;
+
+    background: white;
+
+    border:
+        1px solid #e5e7eb;
+
+    border-radius: 8px;
+}
+
+.developer-panel summary {
+    cursor: pointer;
+
+    font-size: 12px;
+
+    font-weight: 600;
+}
+
+.raw-output {
+    margin-top: 10px;
+
+    max-height: 250px;
+
+    overflow: auto;
+
+    padding: 8px;
+
+    background: #111827;
+
+    color: #f9fafb;
+
+    border-radius: 6px;
+
+    font-size: 10px;
+
+    white-space: pre-wrap;
+}
+
+
+/* =========================
+   STATUS / FOOTER
+   ========================= */
+
+#agentStatus {
+    margin: 6px 0;
+
+    font-size: 11px;
+
+    color: #6b7280;
+}
+
+.app-footer {
+    flex-shrink: 0;
+
+    padding: 6px 10px;
+
+    border-top:
+        1px solid #e5e7eb;
+
+    background: white;
+
+    font-size: 10px;
+
+    color: #9ca3af;
+
+    text-align: center;
+}
+
+.selected-files {
+    margin-top: 10px;
+
+    padding: 10px;
+
+    background: #f9fafb;
+
+    border:
+        1px solid #e5e7eb;
+
+    border-radius: 6px;
+
+    font-size: 11px;
+
+    line-height: 1.5;
+}
+
+.import-status {
+    margin-top: 10px;
+    font-size: 11px;
+    color: #6b7280;
+}
+
+.import-status.error {
+    color: #dc2626;
+}
