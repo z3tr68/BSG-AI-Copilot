@@ -272,6 +272,28 @@ def process_response(
 
     tool_calls = []
 
+    usage = response.usage
+
+    if usage:
+        print("\n--- AGENT TOKEN USAGE ---")
+        print("Input tokens:", usage.input_tokens)
+        print("Output tokens:", usage.output_tokens)
+
+        input_details = usage.input_tokens_details
+
+        if input_details:
+            print(
+                "Cached input tokens:",
+                input_details.cached_tokens
+            )
+
+        print(
+            "Total tokens:",
+            usage.total_tokens
+        )
+
+    print("-------------------------\n")
+
 
     for item in response.output:
 
@@ -366,6 +388,32 @@ def continue_agent_turn(
                 output_json
 
         })
+
+
+        print(
+            "\n--- TOOL OUTPUT SIZE ---"
+        )
+
+        print(
+            "Call ID:",
+            tool_output["call_id"]
+        )
+
+        print(
+            "Characters:",
+            len(output_json)
+        )
+
+        print(
+            "Approx tokens:",
+            round(
+                len(output_json) / 4
+            )
+        )
+
+        print(
+            "------------------------\n"
+        )
 
 
     response = client.responses.create(
