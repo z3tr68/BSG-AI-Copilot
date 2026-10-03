@@ -473,7 +473,6 @@ BSG_TOOLS = cast(
                 },
 
                 "required": [
-                    "industry",
                     "company",
                     "startYear",
                     "endYear"
@@ -487,13 +486,16 @@ BSG_TOOLS = cast(
             "type": "function",
             "name": "compare_companies",
             "description": (
-                "Retrieve the same targeted historical BSG evidence for two or more "
-                "companies in a specified year so their financial performance, "
-                "competitive positioning, production, and market behavior can be "
-                "compared efficiently. Use this instead of making separate "
-                "get_company_history calls when comparing companies. Request only "
-                "the FIR pages, COR sections, CIR regions, and CIR segments needed "
-                "for the analysis."
+                "Retrieve targeted historical information for one BSG company over a "
+                "specified year range. Use this for focused historical comparisons and "
+                "trend analysis. Minimize retrieval size: start with the smallest year "
+                "range and the fewest FIR pages and COR sections needed to answer the "
+                "question. Do not retrieve broad multi-year FIR and COR datasets as an "
+                "initial exploratory step. When additional historical context may be "
+                "useful, retrieve the most relevant metrics first and expand only when "
+                "the returned evidence identifies a specific need. Prefer direct get_fir, "
+                "get_cor, or get_cir calls when only one report, section, year, or market "
+                "is needed."
             ),
             "parameters": {
                 "type": "object",
@@ -563,8 +565,9 @@ BSG_TOOLS = cast(
                             "type": "string"
                         },
                         "description": (
-                            "Optional FIR page filter. Request only pages "
-                            "needed for the comparison."
+                            "FIR pages to retrieve. Keep this list minimal. Do not request "
+                            "multiple FIR pages speculatively; add pages only when each is "
+                            "needed for the analysis."
                         )
                     },
 
@@ -574,8 +577,9 @@ BSG_TOOLS = cast(
                             "type": "string"
                         },
                         "description": (
-                            "Optional COR section filter. Request only sections "
-                            "needed for the comparison."
+                            "COR sections to retrieve. Keep this list minimal. Some COR sections "
+                            "can contain substantial data, so request only sections directly "
+                            "needed for the analysis."
                         )
                     }
 
