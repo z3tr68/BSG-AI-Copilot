@@ -171,6 +171,34 @@ async function executeBSGTool(
 
         }
 
+        // ==================================
+        // PLAYER'S GUIDE SEARCH
+        // ==================================
+
+        case "search_players_guide": {
+
+            return await searchPlayersGuide(
+                args.query,
+                {
+                    limit: 3
+                }
+            );
+
+        }
+
+
+        // ==================================
+        // PLAYER'S GUIDE SECTION
+        // ==================================
+
+        case "get_players_guide_section": {
+
+            return await getPlayersGuideSection(
+                args.sectionId
+            );
+
+        }
+
 
         // ==================================
         // FIR

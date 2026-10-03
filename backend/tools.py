@@ -177,6 +177,62 @@ BSG_TOOLS = cast(
 
         {
             "type": "function",
+            "name": "search_players_guide",
+            "description": (
+                "Search the authoritative BSG Player's Guide for documented rules, "
+                "mechanics, cause-effect relationships, constraints, and decision "
+                "behavior. Use this when reasoning depends on how BSG works and the "
+                "relevant rule is not already established by retrieved evidence. "
+                "Results contain section IDs and short excerpts; retrieve the full "
+                "relevant section with get_players_guide_section when additional "
+                "context is needed."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": (
+                            "Natural-language question or mechanics concept to search "
+                            "for in the Player's Guide."
+                        )
+                    }
+                },
+                "required": [
+                    "query"
+                ],
+                "additionalProperties": False
+            }
+        },
+
+        {
+            "type": "function",
+            "name": "get_players_guide_section",
+            "description": (
+                "Retrieve the full text of a specific authoritative BSG Player's Guide "
+                "section identified by search_players_guide. Use this when the search "
+                "excerpt does not provide enough context to establish the relevant "
+                "rule or mechanic. Do not retrieve sections speculatively."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "sectionId": {
+                        "type": "string",
+                        "description": (
+                            "Exact section ID returned by search_players_guide."
+                        )
+                    }
+                },
+                "required": [
+                    "sectionId"
+                ],
+                "additionalProperties": False
+            }
+        },
+
+        {
+            "type": "function",
             "name": "get_fir",
             "description": (
                 "Retrieve Footwear Industry Report data for a historical year. "

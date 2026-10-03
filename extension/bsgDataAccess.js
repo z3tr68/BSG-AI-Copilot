@@ -59,6 +59,8 @@ async function loadBSGDatabase() {
 }
 
 
+//#region DATA RETRIEVAL TOOLS
+//some double as agent tools
 
 // ==========================================
 // GET INDUSTRY
@@ -91,7 +93,6 @@ async function getIndustryData(
 
     return industryData;
 }
-
 
 
 // ==========================================
@@ -182,7 +183,6 @@ async function getRates(
 }
 
 
-
 // ==========================================
 // GET YEAR
 // ==========================================
@@ -218,7 +218,9 @@ async function getYearData(industry, year) {
 }
 
 
-// #region token optimization eventually
+// ==========================================
+// GET YEAR
+// ==========================================
 
 async function getAvailableData() {
 
@@ -673,8 +675,10 @@ async function getAvailableData() {
     return output;
 }
 
-//#endregion
 
+// ==========================================
+// GET ACTIVE INDUSTRY
+// ==========================================
 
 async function getActiveIndustry() {
 
@@ -829,7 +833,6 @@ async function getFIR(
             pageData
     };
 }
-
 
 
 // ==========================================
@@ -1010,7 +1013,6 @@ async function getCIR(
 }
 
 
-
 // ==========================================
 // GET COR
 // ==========================================
@@ -1159,7 +1161,6 @@ async function getCOR(
             regionData
     };
 }
-
 
 
 // ==========================================
@@ -2577,7 +2578,9 @@ async function getPracticeData(
 }
 
 
-
+// ==========================================
+// GET SIMULATION INFO
+// ==========================================
 
 async function getSimulationInfo(
     industry
@@ -2658,6 +2661,501 @@ async function getSimulationInfo(
     };
 
 }
+
+
+// ==================================
+// PLAYER'S GUIDE
+// ==================================
+
+let playersGuideCache = null;
+
+
+async function loadPlayersGuide() {
+
+    if (playersGuideCache) {
+        return playersGuideCache;
+    }
+
+
+    const url =
+        chrome.runtime.getURL(
+            "data/playersGuide.json"
+        );
+
+
+    const response =
+        await fetch(url);
+
+
+    if (!response.ok) {
+        throw new Error(
+            `Failed to load Player's Guide: ${response.status}`
+        );
+    }
+
+
+    const guide =
+        await response.json();
+
+
+    if (!Array.isArray(guide.sections)) {
+        throw new Error(
+            "Invalid Player's Guide data: sections array not found."
+        );
+    }
+
+
+    playersGuideCache = guide;
+
+    return guide;
+}
+
+
+function normalizeGuideSearchText(value) {
+
+    return String(value ?? "")
+        .toLowerCase()
+        .replace(/[’']/g, "")
+        .replace(/[^a-z0-9]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+}
+
+
+function expandGuideSearchTerms(terms) {
+
+    const synonymGroups = [
+        [
+            "ship",
+            "ships",
+            "shipped",
+            "shipping"
+        ],
+        [
+            "produce",
+            "produced",
+            "production"
+        ],
+        [
+            "improve",
+            "improved",
+            "improvement",
+            "improvements"
+        ],
+        [
+            "bid",
+            "bids",
+            "bidding",
+            "offer",
+            "offers"
+        ],
+        [
+            "award",
+            "awarded",
+            "contract",
+            "contracts"
+        ]
+    ];
+
+
+    const expanded =
+        new Set(terms);
+
+
+    for (const term of terms) {
+
+        for (const group of synonymGroups) {
+
+            if (group.includes(term)) {
+
+                for (
+                    const relatedTerm
+                    of group
+                ) {
+                    expanded.add(
+                        relatedTerm
+                    );
+                }
+
+            }
+
+        }
+
+    }
+
+
+    return [
+        ...expanded
+    ];
+}
+
+
+async function searchPlayersGuide(
+    query,
+    options = {}
+) {
+
+    const guide =
+        await loadPlayersGuide();
+
+
+    const normalizedQuery =
+        normalizeGuideSearchText(query);
+
+
+    if (!normalizedQuery) {
+        throw new Error(
+            "Player's Guide search query is required."
+        );
+    }
+
+
+    const limit =
+        Math.max(
+            1,
+            Math.min(
+                Number(options.limit) || 3,
+                5
+            )
+        );
+
+
+    const guideStopWords =
+        new Set([
+            "a",
+            "an",
+            "and",
+            "are",
+            "be",
+            "do",
+            "does",
+            "how",
+            "in",
+            "is",
+            "of",
+            "on",
+            "the",
+            "to",
+            "what",
+            "when",
+            "where",
+            "which",
+            "who",
+            "why",
+
+            // Very common BSG terms that provide
+            // little search discrimination.
+            "company",
+            "companies",
+            "footwear",
+            "branded"
+        ]);
+
+
+    const baseQueryTerms =
+        normalizedQuery
+            .split(" ")
+            .filter(term =>
+                term.length >= 3 &&
+                !guideStopWords.has(term)
+            );
+
+
+    const queryTerms =
+        expandGuideSearchTerms(
+            baseQueryTerms
+        );
+
+
+    const scoredSections =
+        guide.sections
+            .map(section => {
+
+                const title =
+                    normalizeGuideSearchText(
+                        section.title
+                    );
+
+                const parent =
+                    normalizeGuideSearchText(
+                        section.parentSection
+                    );
+
+                const keywords =
+                    normalizeGuideSearchText(
+                        Array.isArray(section.keywords)
+                            ? section.keywords.join(" ")
+                            : ""
+                    );
+
+                const text =
+                    normalizeGuideSearchText(
+                        section.text
+                    );
+
+
+                let score = 0;
+
+
+                // Exact phrase matches are strongest.
+
+                if (
+                    title.includes(
+                        normalizedQuery
+                    )
+                ) {
+                    score += 40;
+                }
+
+                if (
+                    keywords.includes(
+                        normalizedQuery
+                    )
+                ) {
+                    score += 25;
+                }
+
+                if (
+                    text.includes(
+                        normalizedQuery
+                    )
+                ) {
+                    score += 15;
+                }
+
+
+                // Individual term matches.
+
+                for (const term of queryTerms) {
+
+                    if (title.includes(term)) {
+                        score += 12;
+                    }
+
+                    if (parent.includes(term)) {
+                        score += 6;
+                    }
+
+                    if (keywords.includes(term)) {
+                        score += 8;
+                    }
+
+                    if (text.includes(term)) {
+                        score += 2;
+                    }
+                }
+
+                const matchedTerms =
+                    queryTerms.filter(term =>
+                        title.includes(term) ||
+                        parent.includes(term) ||
+                        keywords.includes(term) ||
+                        text.includes(term)
+                    ).length;
+
+
+                if (matchedTerms >= 2) {
+                    score +=
+                        matchedTerms * 6;
+                }
+
+
+                return {
+                    section,
+                    score
+                };
+
+            })
+            .filter(result =>
+                result.score > 0
+            )
+            .sort(
+                (a, b) =>
+                    b.score - a.score
+            )
+            .slice(
+                0,
+                limit
+            );
+
+
+    return {
+        query,
+        results:
+            scoredSections.map(
+                ({ section, score }) => {
+
+                    const excerpt =
+                        createGuideExcerpt(
+                            section.text,
+                            queryTerms
+                        );
+
+
+                    return {
+                        sectionId:
+                            section.id,
+
+                        title:
+                            section.title,
+
+                        parentSection:
+                            section.parentSection ??
+                            null,
+
+                        source:
+                            "player_guide",
+
+                        score,
+
+                        excerpt
+                    };
+
+                }
+            )
+    };
+}
+
+
+function createGuideExcerpt(
+    text,
+    queryTerms
+) {
+
+    const cleanText =
+        String(text ?? "")
+            .replace(/\s+/g, " ")
+            .trim();
+
+
+    if (!cleanText) {
+        return "";
+    }
+
+
+    const lowerText =
+        cleanText.toLowerCase();
+
+
+    let matchIndex = -1;
+
+
+    for (const term of queryTerms) {
+
+        const index =
+            lowerText.indexOf(
+                term.toLowerCase()
+            );
+
+
+        if (
+            index !== -1 &&
+            (
+                matchIndex === -1 ||
+                index < matchIndex
+            )
+        ) {
+            matchIndex = index;
+        }
+    }
+
+
+    if (matchIndex === -1) {
+        matchIndex = 0;
+    }
+
+
+    const excerptLength = 500;
+
+    const start =
+        Math.max(
+            0,
+            matchIndex - 120
+        );
+
+    const end =
+        Math.min(
+            cleanText.length,
+            start + excerptLength
+        );
+
+
+    let excerpt =
+        cleanText.slice(
+            start,
+            end
+        );
+
+
+    if (start > 0) {
+        excerpt = "..." + excerpt;
+    }
+
+    if (end < cleanText.length) {
+        excerpt += "...";
+    }
+
+
+    return excerpt;
+}
+
+
+async function getPlayersGuideSection(
+    sectionId
+) {
+
+    if (!sectionId) {
+        throw new Error(
+            "Player's Guide section ID is required."
+        );
+    }
+
+
+    const guide =
+        await loadPlayersGuide();
+
+
+    const normalizedId =
+        String(sectionId)
+            .trim()
+            .toLowerCase();
+
+
+    const section =
+        guide.sections.find(
+            item =>
+                String(item.id)
+                    .toLowerCase() ===
+                normalizedId
+        );
+
+
+    if (!section) {
+        throw new Error(
+            `Player's Guide section not found: ${sectionId}`
+        );
+    }
+
+
+    return {
+        sectionId:
+            section.id,
+
+        title:
+            section.title,
+
+        parentSection:
+            section.parentSection ??
+            null,
+
+        source:
+            "player_guide",
+
+        text:
+            section.text
+    };
+}
+
 
 
 // ==========================================
