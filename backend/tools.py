@@ -184,15 +184,14 @@ BSG_TOOLS = cast(
                 "including scores, EPS, ROE, stock price, financial statistics, "
                 "production benchmarks, operating benchmarks, credit rating, "
                 "image rating, celebrity information, and price trends."
+                "Use the companies filter whenever the analysis only requires "
+                "one or a small number of companies; omit it when industry-wide "
+                "evidence is needed."
             ),
             "parameters": {
                 "type": "object",
 
                 "properties": {
-
-                    "industry": {
-                        "type": "integer"
-                    },
 
                     "year": {
                         "type": "integer"
@@ -212,12 +211,28 @@ BSG_TOOLS = cast(
                             "celebrity_and_price_trends",
                             None
                         ]
-                    }
+                    },
+
+                    "companies": {
+                        "type": ["array", "null"],
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "A", "B", "C", "D",
+                                "E", "F", "G", "H",
+                                "I", "J", "K", "L"
+                            ]
+                        },
+                        "description": (
+                            "Optional company filter. When only specific companies are needed, "
+                            "request only those companies to reduce data volume. Omit or use null "
+                            "when industry-wide comparison is required."
+                        )
+                    },
 
                 },
 
                 "required": [
-                    "industry",
                     "year",
                     "page"
                 ],
@@ -241,10 +256,6 @@ BSG_TOOLS = cast(
                 "type": "object",
 
                 "properties": {
-
-                    "industry": {
-                        "type": "integer"
-                    },
 
                     "year": {
                         "type": "integer"
@@ -288,7 +299,6 @@ BSG_TOOLS = cast(
                 },
 
                 "required": [
-                    "industry",
                     "year",
                     "region",
                     "segment",
@@ -314,10 +324,6 @@ BSG_TOOLS = cast(
                 "type": "object",
 
                 "properties": {
-
-                    "industry": {
-                        "type": "integer"
-                    },
 
                     "year": {
                         "type": "integer"
@@ -369,7 +375,6 @@ BSG_TOOLS = cast(
                 },
 
                 "required": [
-                    "industry",
                     "year",
                     "section",
                     "region"

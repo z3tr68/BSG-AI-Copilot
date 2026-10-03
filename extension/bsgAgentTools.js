@@ -176,30 +176,44 @@ async function executeBSGTool(
         // FIR
         // ==================================
 
-        case "get_fir":
+        case "get_fir": {
 
-            const result = await getFIR(
-                args.industry,
-                args.year,
-                args.page ?? null
+            const industry =
+                await getActiveIndustry();
+
+            const result =
+                await getFIR(
+                    industry,
+                    args.year,
+                    args.page ?? null
+                );
+
+            const compacted =
+                compactFIRForAgent(result);
+
+            return projectFIRCompaniesForAgent(
+                compacted,
+                args.companies
             );
-
-            return compactFIRForAgent(result);
+        }
 
 
         // ==================================
         // CIR
         // ==================================
 
-        case "get_cir":
+        case "get_cir": {
+
+            const industry = await getActiveIndustry();
 
             return await getCIR(
-                args.industry,
+                industry,
                 args.year,
                 args.region ?? null,
                 args.segment ?? null,
                 args.company ?? null
             );
+        }
 
 
         // ==================================
@@ -208,8 +222,11 @@ async function executeBSGTool(
 
         case "get_cor": {
 
+            const industry =
+                await getActiveIndustry();
+
             const result = await getCOR(
-                args.industry,
+                industry,
                 args.year,
                 args.section ?? null,
                 args.region ?? null
@@ -217,7 +234,7 @@ async function executeBSGTool(
             return compactCORForAgent(
                 args.section,
                 result
-            )
+            );
         }
 
         // ==================================
@@ -434,6 +451,73 @@ function compactFIRForAgent(result) {
     }
 
     return compact(result);
+}
+
+
+function projectFIRCompaniesForAgent(
+    result,
+    companies
+) {
+    if (
+        !Array.isArray(companies) ||
+        companies.length === 0
+    ) {
+        return result;
+    }
+
+    const selectedCompanies =
+        new Set(
+            companies.map(company =>
+                String(company).toUpperCase()
+            )
+        );
+
+    function project(value) {
+        if (Array.isArray(value)) {
+            return value.map(project);
+        }
+
+        if (
+            value !== null &&
+            typeof value === "object"
+        ) {
+            const output = {};
+
+            for (
+                const [key, childValue]
+                of Object.entries(value)
+            ) {
+                if (
+                    key === "companyValues" &&
+                    childValue !== null &&
+                    typeof childValue === "object"
+                ) {
+                    output[key] =
+                        Object.fromEntries(
+                            Object.entries(
+                                childValue
+                            ).filter(
+                                ([company]) =>
+                                    selectedCompanies.has(
+                                        company
+                                    )
+                            )
+                        );
+
+                    continue;
+                }
+
+                output[key] =
+                    project(childValue);
+            }
+
+            return output;
+        }
+
+        return value;
+    }
+
+    return project(result);
 }
 
 
