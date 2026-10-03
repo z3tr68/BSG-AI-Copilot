@@ -173,11 +173,13 @@ async function executeBSGTool(
 
         case "get_fir":
 
-            return await getFIR(
+            const result = await getFIR(
                 args.industry,
                 args.year,
                 args.page ?? null
             );
+
+            return compactFIRForAgent(result);
 
 
         // ==================================
@@ -199,15 +201,19 @@ async function executeBSGTool(
         // COR
         // ==================================
 
-        case "get_cor":
+        case "get_cor": {
 
-            return await getCOR(
+            const result = await getCOR(
                 args.industry,
                 args.year,
                 args.section ?? null,
                 args.region ?? null
             );
-
+            return compactCORForAgent(
+                args.section,
+                result
+            )
+        }
 
         // ==================================
         // COMPANY HISTORY
@@ -247,11 +253,14 @@ async function executeBSGTool(
             };
 
 
-            return await getCompanyHistory(
+            const result = await getCompanyHistory(
                 industry,
                 args.company,
                 options
             );
+
+
+            return compactCompanyHistoryForAgent(result)
 
         };
 
@@ -376,3 +385,214 @@ async function executeBSGTool(
 
 }
 
+
+function compactFIRForAgent(result) {
+    if (
+        result === null ||
+        result === undefined
+    ) {
+        return result;
+    }
+
+    const REMOVE_KEYS = new Set([
+        "values",
+        "sourceRow",
+        "pageCode"
+    ]);
+
+    function compact(value) {
+        if (Array.isArray(value)) {
+            return value.map(compact);
+        }
+
+        if (
+            value !== null &&
+            typeof value === "object"
+        ) {
+            const output = {};
+
+            for (
+                const [key, childValue]
+                of Object.entries(value)
+            ) {
+                if (REMOVE_KEYS.has(key)) {
+                    continue;
+                }
+
+                output[key] = compact(childValue);
+            }
+
+            return output;
+        }
+
+        return value;
+    }
+
+    return compact(result);
+}
+
+
+function compactCompanyHistoryForAgent(result) {
+    if (
+        result === null ||
+        result === undefined
+    ) {
+        return result;
+    }
+
+
+    const REMOVE_KEYS = new Set([
+        "sourceRow",
+        "values",
+        "pageCode"
+    ]);
+
+
+    function compact(value) {
+        if (Array.isArray(value)) {
+            return value
+                .map(compact)
+                .filter(item =>
+                    item !== null &&
+                    item !== undefined
+                );
+        }
+
+        if (
+            value !== null &&
+            typeof value === "object"
+        ) {
+            const output = {};
+
+            for (
+                const [key, childValue]
+                of Object.entries(value)
+            ) {
+                if (REMOVE_KEYS.has(key)) {
+                    continue;
+                }
+
+                if (
+                    childValue === null ||
+                    childValue === undefined
+                ) {
+                    continue;
+                }
+
+                output[key] =
+                    compact(childValue);
+            }
+
+            return output;
+        }
+
+        return value;
+    }
+
+
+    const compacted =
+        compact(result);
+
+
+    for (
+        const yearData
+        of Object.values(
+            compacted.years ?? {}
+        )
+    ) {
+        const sections =
+            yearData
+                ?.companyOperatingReport
+                ?.sections;
+
+        if (
+            !sections ||
+            typeof sections !== "object"
+        ) {
+            continue;
+        }
+
+
+        for (
+            const [section, data]
+            of Object.entries(sections)
+        ) {
+            sections[section] =
+                compactCORForAgent(
+                    section,
+                    data
+                );
+        }
+    }
+
+
+    return compacted;
+}
+
+function compactCORForAgent(
+    section,
+    result
+) {
+    if (
+        result === null ||
+        result === undefined
+    ) {
+        return result;
+    }
+
+    function compact(value) {
+        if (Array.isArray(value)) {
+            return value.map(compact);
+        }
+
+        if (
+            value !== null &&
+            typeof value === "object"
+        ) {
+            const output = {};
+
+            for (
+                const [key, childValue]
+                of Object.entries(value)
+            ) {
+                if (
+                    key === "sourceRow" ||
+                    key === "pageCode"
+                ) {
+                    continue;
+                }
+
+                output[key] =
+                    compact(childValue);
+            }
+
+            return output;
+        }
+
+        return value;
+    }
+
+
+    const compacted =
+        compact(result);
+
+
+    if (
+        section ===
+        "production_workforce" &&
+        compacted &&
+        typeof compacted === "object"
+    ) {
+        delete compacted.rows;
+
+        if (
+            compacted.data &&
+            typeof compacted.data === "object"
+        ) {
+            delete compacted.data.rows;
+        }
+    }
+
+
+    return compacted;
+}
