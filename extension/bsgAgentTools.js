@@ -120,9 +120,14 @@ async function executeBSGTool(
         // AVAILABLE DATA
         // ==================================
 
-        case "get_available_data":
+        case "get_available_data": {
+            const result =
+                await getAvailableData();
 
-            return await getAvailableData();
+            return compactAvailableDataForAgent(
+                result
+            );
+        }
 
         // ==================================
         // PRACTICE ARCHIVE
@@ -529,6 +534,7 @@ function compactCompanyHistoryForAgent(result) {
     return compacted;
 }
 
+
 function compactCORForAgent(
     section,
     result
@@ -595,4 +601,154 @@ function compactCORForAgent(
 
 
     return compacted;
+}
+
+
+function compactAvailableDataForAgent(result) {
+    if (
+        !result ||
+        typeof result !== "object"
+    ) {
+        return result;
+    }
+
+    const output = {
+        industries: {}
+    };
+
+    for (
+        const [industryKey, industryData]
+        of Object.entries(
+            result.industries ?? {}
+        )
+    ) {
+        const liveYears =
+            industryData.liveYears ?? {};
+
+        const historicalYears =
+            industryData.liveHistoricalYears ?? [];
+
+        const schemas =
+            historicalYears.map(year => {
+                const data =
+                    liveYears[year] ?? {};
+
+                return {
+                    firPages:
+                        data.firPages ?? [],
+
+                    cirRegions:
+                        data.cirRegions ?? [],
+
+                    corSections:
+                        Object.fromEntries(
+                            Object.entries(
+                                data.corSections ?? {}
+                            ).map(
+                                ([section, info]) => [
+                                    section,
+                                    info?.regions ?? []
+                                ]
+                            )
+                        )
+                };
+            });
+
+        const sharedHistoricalSchema =
+            schemas.length > 0 &&
+            schemas.every(
+                schema =>
+                    JSON.stringify(schema) ===
+                    JSON.stringify(schemas[0])
+            );
+
+        const compactedIndustry = {
+            industry:
+                industryData.industry,
+
+            phase:
+                industryData.phase,
+
+            currentYear:
+                industryData.currentYear,
+
+            userCompany:
+                industryData.userCompany,
+
+            startingData: {
+                available:
+                    Boolean(
+                        industryData
+                            .startingData
+                            ?.available
+                    ),
+
+                year:
+                    industryData
+                        .startingData
+                        ?.year ?? null
+            },
+
+            liveHistoricalYears:
+                historicalYears,
+
+            currentRound: {
+                available:
+                    Boolean(
+                        industryData
+                            .currentRound
+                            ?.available
+                    ),
+
+                year:
+                    industryData
+                        .currentRound
+                        ?.year ?? null,
+
+                pages:
+                    industryData
+                        .currentRound
+                        ?.pages ?? []
+            },
+
+            practiceArchive: {
+                available:
+                    Boolean(
+                        industryData
+                            .practiceArchive
+                            ?.available
+                    ),
+
+                years:
+                    industryData
+                        .practiceArchive
+                        ?.years ?? [],
+
+                access:
+                    industryData
+                        .practiceArchive
+                        ?.access ?? null
+            }
+        };
+
+        if (sharedHistoricalSchema) {
+            compactedIndustry.historicalSchema =
+                schemas[0];
+        } else {
+            compactedIndustry.liveYears =
+                Object.fromEntries(
+                    historicalYears.map(
+                        (year, index) => [
+                            year,
+                            schemas[index]
+                        ]
+                    )
+                );
+        }
+
+        output.industries[industryKey] =
+            compactedIndustry;
+    }
+
+    return output;
 }
