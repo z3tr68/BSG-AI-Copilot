@@ -5706,6 +5706,217 @@ function flattenMechanicsSourceContext(
         )
         .join(" ");
 }
+
+
+// ==========================================
+// WEEKLY STRATEGIC REPORTS
+// ==========================================
+
+async function loadWeeklyReports() {
+
+    const result =
+        await chrome.storage.local.get(
+            "bsgWeeklyReports"
+        );
+
+    return result.bsgWeeklyReports ?? {
+        version: 1,
+        industries: {}
+    };
+}
+
+
+async function saveWeeklyReports(reports) {
+
+    await chrome.storage.local.set({
+        bsgWeeklyReports: reports
+    });
+
+    return reports;
+}
+
+
+async function saveWeeklyReport(
+    industry,
+    year,
+    report
+) {
+
+    if (
+        !Number.isInteger(industry) ||
+        !Number.isInteger(year)
+    ) {
+
+        throw new Error(
+            "Weekly report requires a valid industry and year."
+        );
+
+    }
+
+
+    if (
+        !report ||
+        typeof report !== "object" ||
+        Array.isArray(report)
+    ) {
+
+        throw new Error(
+            "Weekly report must be an object."
+        );
+
+    }
+
+
+    const reports =
+        await loadWeeklyReports();
+
+
+    const industryKey =
+        `industry_${industry}`;
+
+    const yearKey =
+        `year_${year}`;
+
+
+    if (
+        !reports.industries[industryKey]
+    ) {
+
+        reports.industries[industryKey] = {
+            industry,
+            reports: {}
+        };
+
+    }
+
+
+    const now =
+        new Date().toISOString();
+
+
+    const existing =
+        reports
+            .industries[industryKey]
+            .reports[yearKey];
+
+
+    const storedReport = {
+
+        industry,
+
+        year,
+
+        report,
+
+        createdAt:
+            existing?.createdAt ?? now,
+
+        updatedAt:
+            now
+
+    };
+
+
+    reports
+        .industries[industryKey]
+        .reports[yearKey] =
+            storedReport;
+
+
+    await saveWeeklyReports(
+        reports
+    );
+
+
+    return storedReport;
+}
+
+
+async function getWeeklyReport(
+    industry,
+    year = null
+) {
+
+    if (
+        !Number.isInteger(industry)
+    ) {
+
+        throw new Error(
+            "Weekly report retrieval requires a valid industry."
+        );
+
+    }
+
+
+    const reports =
+        await loadWeeklyReports();
+
+
+    const industryData =
+        reports.industries[
+            `industry_${industry}`
+        ];
+
+
+    if (!industryData) {
+
+        return null;
+
+    }
+
+
+    // ======================================
+    // SPECIFIC YEAR
+    // ======================================
+
+    if (year !== null) {
+
+        if (
+            !Number.isInteger(year)
+        ) {
+
+            throw new Error(
+                "Weekly report year must be an integer."
+            );
+
+        }
+
+
+        return (
+            industryData.reports[
+                `year_${year}`
+            ] ?? null
+        );
+
+    }
+
+
+    // ======================================
+    // LATEST AVAILABLE REPORT
+    // ======================================
+
+    const availableYears =
+        Object.values(
+            industryData.reports
+        )
+        .filter(
+            report =>
+                Number.isInteger(
+                    report?.year
+                )
+        )
+        .sort(
+            (a, b) =>
+                b.year - a.year
+        );
+
+
+    return (
+        availableYears[0] ??
+        null
+    );
+}
+
 //#endregion
 
 //#region flag for later

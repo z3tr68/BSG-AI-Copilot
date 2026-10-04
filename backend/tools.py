@@ -119,11 +119,10 @@ BSG_TOOLS = cast(
             "type": "function",
             "name": "get_current_page",
             "description": (
-                "Retrieve normalized data from a BSG page "
-                "that has been extracted during the current "
-                "decision round. Use this tool when current "
-                "decisions, projections, or current-round "
-                "regional data are needed."
+                "Retrieve the latest extracted snapshot for one specific current live "
+                "decision page. A specific pageType is required. This tool cannot retrieve "
+                "all current decision pages at once. Request additional pages separately "
+                "only when they are necessary for the current analysis. "
             ),
 
             "parameters": {
@@ -373,6 +372,218 @@ BSG_TOOLS = cast(
                     "confidence",
                     "evidence"
                 ],
+                "additionalProperties": False
+            }
+        },
+
+        {
+            "type": "function",
+            "name": "get_weekly_report",
+            "description": (
+                "Retrieve a prior live decision-year strategic report. "
+                "Use it to maintain strategic continuity across decision years. "
+                "If year is omitted, returns the latest available report."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "year": {
+                        "type": ["integer", "null"],
+                        "description": (
+                            "Specific decision year to retrieve. "
+                            "Use null to retrieve the latest available report."
+                        )
+                    }
+                },
+                "required": ["year"],
+                "additionalProperties": False
+            }
+        },
+
+        {
+            "type": "function",
+            "name": "write_weekly_report",
+            "description": (
+                "Write or replace the strategic continuity report for a completed "
+                "live decision year. Use only when the year's decisions are settled. "
+                "Summarize strategy, competitive position, important decisions and "
+                "rationale, durable lessons, unresolved questions, and priorities "
+                "for the next year. Keep the report concise and evidence-based."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "year": {
+                        "type": "integer",
+                        "description": "Completed live decision year."
+                    },
+
+                    "report": {
+                        "type": "object",
+                        "properties": {
+                            "strategicSummary": {
+                                "type": "string",
+                                "description": (
+                                    "Concise summary of the company's strategy "
+                                    "and strategic direction at year end."
+                                )
+                            },
+
+                            "competitivePosition": {
+                                "type": "object",
+                                "properties": {
+                                    "summary": {
+                                        "type": "string"
+                                    },
+                                    "primaryCompetitors": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "advantages": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "disadvantages": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                },
+                                "required": [
+                                    "summary",
+                                    "primaryCompetitors",
+                                    "advantages",
+                                    "disadvantages"
+                                ],
+                                "additionalProperties": False
+                            },
+
+                            "strategy": {
+                                "type": "object",
+                                "properties": {
+                                    "currentApproach": {
+                                        "type": "string"
+                                    },
+                                    "longTermObjective": {
+                                        "type": "string"
+                                    },
+                                    "priorities": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "avoidances": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                },
+                                "required": [
+                                    "currentApproach",
+                                    "longTermObjective",
+                                    "priorities",
+                                    "avoidances"
+                                ],
+                                "additionalProperties": False
+                            },
+
+                            "keyDecisions": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "page": {
+                                            "type": "string"
+                                        },
+                                        "decision": {
+                                            "type": "string"
+                                        },
+                                        "rationale": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "page",
+                                        "decision",
+                                        "rationale"
+                                    ],
+                                    "additionalProperties": False
+                                }
+                            },
+
+                            "performanceGap": {
+                                "type": "object",
+                                "properties": {
+                                    "benchmarkCompany": {
+                                        "type": ["string", "null"]
+                                    },
+                                    "summary": {
+                                        "type": "string"
+                                    },
+                                    "metricsToClose": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                },
+                                "required": [
+                                    "benchmarkCompany",
+                                    "summary",
+                                    "metricsToClose"
+                                ],
+                                "additionalProperties": False
+                            },
+
+                            "experimentsAndLessons": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+
+                            "unresolvedQuestions": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+
+                            "nextYearPriorities": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+
+                        "required": [
+                            "strategicSummary",
+                            "competitivePosition",
+                            "strategy",
+                            "keyDecisions",
+                            "performanceGap",
+                            "experimentsAndLessons",
+                            "unresolvedQuestions",
+                            "nextYearPriorities"
+                        ],
+
+                        "additionalProperties": False
+                    }
+                },
+
+                "required": [
+                    "year",
+                    "report"
+                ],
+
                 "additionalProperties": False
             }
         },
@@ -865,12 +1076,13 @@ BSG_TOOLS = cast(
             "type": "function",
             "name": "compare_projection_to_actual",
             "description": (
-                "Retrieve Company H's archived final decision projections and "
-                "actual historical results for the same completed BSG year. "
-                "Use this to analyze projection accuracy, identify material "
-                "variances, and improve assumptions for later decision years. "
-                "Request only the decision pages and historical evidence needed "
-                "for the analysis."
+                "Perform a targeted comparison between one completed decision page's "
+                "final projection and selected actual results for the same year. "
+                "Use this to investigate a specific projection-versus-actual question, "
+                "not to retrieve or reconstruct an entire year's results. Request only "
+                "the FIR and COR sections needed for the selected page. For broader "
+                "year-end analysis, use targeted FIR, CIR, COR, or historical retrieval "
+                "instead of combining many result sections in this tool."
             ),
             "parameters": {
                 "type": "object",
@@ -878,23 +1090,34 @@ BSG_TOOLS = cast(
                     "year": {
                         "type": "integer"
                     },
-                    "pages": {
-                        "type": ["array", "null"],
-                        "items": {
-                            "type": "string"
-                        }
+                    "page": {
+                        "type": "string",
+                        "description": (
+                            "One final decision page to compare against actual Year results. "
+                            "Only one decision page may be analyzed per call."
+                        )
                     },
                     "firPages": {
                         "type": ["array", "null"],
                         "items": {
                             "type": "string"
-                        }
+                        },
+                        "maxItems": 3,
+                        "description": (
+                            "Only FIR pages directly needed to evaluate the selected "
+                            "decision page. Request as few as possible."
+                        )
                     },
                     "corSections": {
                         "type": ["array", "null"],
                         "items": {
                             "type": "string"
-                        }
+                        },
+                        "maxItems": 3,
+                        "description": (
+                            "Only COR sections directly needed to evaluate the selected "
+                            "decision page. Request as few as possible."
+                        )
                     },
                     "regions": {
                         "type": ["array", "null"],
@@ -915,7 +1138,12 @@ BSG_TOOLS = cast(
                     }
                 },
                 "required": [
-                    "year"
+                    "year",
+                    "page",
+                    "firPages",
+                    "corSections",
+                    "regions",
+                    "segments"
                 ],
                 "additionalProperties": False
             }

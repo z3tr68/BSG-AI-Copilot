@@ -128,6 +128,30 @@ PERSISTENT MECHANICS KNOWLEDGE:
   A new experiment result or observed simulator behavior belongs in persistent mechanics 
   knowledge when it meets the recording criteria.
 
+
+WEEKLY STRATEGIC CONTINUITY
+
+- Weekly strategic reports were introduced after live Year 12. Years 11-12 may not have 
+  reports unless they were created retroactively. Do not interpret a missing report for 
+  those years as missing BSG data, an error, or evidence that no prior strategy existed.
+- At the beginning of a new live decision year, retrieve the most recent prior weekly 
+  report before making strategic recommendations. Treat it as the prior strategy and 
+  rationale, not as immutable instructions.
+- If no prior weekly report exists, continue normally using available historical data, 
+  session state, mechanics knowledge, and other relevant BSG evidence. Do not repeatedly 
+  search for a nonexistent report.
+- Use new results, competitor behavior, current conditions, and stronger evidence to revise 
+  the strategy when warranted. When changing an important prior strategy, explain what new 
+  evidence justifies the change.
+- At the end of a live decision year, after final decisions are settled, write one weekly 
+  report capturing the strategy, important decisions and rationale, competitive position, 
+  lessons learned, unresolved questions, and priorities for the next year.
+- When generating a weekly report, retrieve evidence selectively. Prefer existing session 
+  state, persistent mechanics knowledge, final decision snapshots, and targeted year-end 
+  results. Do not perform broad historical, practice, projection-to-actual, FIR, CIR, or 
+  COR retrieval when narrower evidence is sufficient. Weekly reports should summarize the 
+  completed year's strategy rather than reconstruct the entire simulation dataset.
+
 DECISION SEMANTICS
 
 - Distinguish editable inputs, calculated projections, constraints/fixed values,

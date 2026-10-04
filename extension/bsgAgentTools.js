@@ -31,7 +31,20 @@ async function executeBSGTool(
 
 
             const pageType =
-                args.pageType || null;
+                args.pageType;
+
+
+            if (
+                !pageType ||
+                typeof pageType !== "string" ||
+                !pageType.trim()
+            ) {
+
+                throw new Error(
+                    "get_current_page requires a specific pageType."
+                );
+
+            }
 
 
             const snapshot =
@@ -45,19 +58,6 @@ async function executeBSGTool(
                 await getAgentSessionState(
                     industry
                 );
-
-
-            // If no specific page was requested,
-            // return the normal current-round summary.
-            //
-            // Freshness validation only applies
-            // cleanly to a specific page snapshot.
-
-            if (!pageType) {
-
-                return snapshot;
-
-            }
 
 
             const pageState =
@@ -76,7 +76,10 @@ async function executeBSGTool(
 
             return {
 
-                snapshot,
+                snapshot:
+                    compactCurrentPageForAgent(
+                        snapshot
+                    ),
 
                 evidenceFreshness: {
 
@@ -247,6 +250,33 @@ async function executeBSGTool(
         }
 
 
+        case "get_weekly_report": {
+
+            const industry =
+                await getActiveIndustry();
+
+            return await getWeeklyReport(
+                industry,
+                args.year ?? null
+            );
+
+        }
+
+
+        case "write_weekly_report": {
+
+            const industry =
+                await getActiveIndustry();
+
+            return await saveWeeklyReport(
+                industry,
+                args.year,
+                args.report
+            );
+
+        }
+
+
         // ==================================
         // FIR
         // ==================================
@@ -412,12 +442,14 @@ async function executeBSGTool(
         }
 
         case "compare_projection_to_actual": {
+
             const industry =
                 await getActiveIndustry();
 
             const options = {
-                pages:
-                    args.pages ?? null,
+                pages: [
+                    args.page
+                ],
 
                 firPages:
                     args.firPages ?? null,
@@ -432,11 +464,29 @@ async function executeBSGTool(
                     args.segments ?? null
             };
 
-            return await compareProjectionToActual(
-                industry,
-                args.year,
-                options
-            );
+
+            const result =
+                await compareProjectionToActual(
+                    industry,
+                    args.year,
+                    options
+                );
+
+
+            return {
+                ...result,
+
+                projection:
+                    compactProjectionToActualForAgent(
+                        result
+                    ).projection,
+
+                actual:
+                    compactCompanyHistoryForAgent(
+                        result.actual
+                    )
+            };
+
         }
 
 
@@ -481,6 +531,11 @@ async function executeBSGTool(
     }
 
 }
+
+
+// ==========================================
+// TOOL COMPACTORS FOR TOKEN OPTIMIZATION
+// ==========================================
 
 
 function compactFIRForAgent(result) {
@@ -910,4 +965,161 @@ function compactAvailableDataForAgent(result) {
     }
 
     return output;
+}
+
+
+function compactProjectionToActualForAgent(
+    result
+) {
+
+    if (
+        !result ||
+        typeof result !== "object"
+    ) {
+        return result;
+    }
+
+
+    const excludedKeys =
+        new Set([
+            "sourceRow",
+            "pageCode",
+            "values",
+            "decisionMetadata",
+            "assumptionMetadata"
+        ]);
+
+
+    const compactValue = (value) => {
+
+        if (Array.isArray(value)) {
+
+            return value.map(
+                compactValue
+            );
+
+        }
+
+
+        if (
+            value &&
+            typeof value === "object"
+        ) {
+
+            const compacted = {};
+
+            for (
+                const [key, child]
+                of Object.entries(value)
+            ) {
+
+                if (
+                    excludedKeys.has(key)
+                ) {
+                    continue;
+                }
+
+
+                compacted[key] =
+                    compactValue(child);
+
+            }
+
+            return compacted;
+
+        }
+
+
+        return value;
+    };
+
+
+    return compactValue(result);
+}
+
+
+function compactCurrentPageForAgent(
+    snapshot
+) {
+
+    if (
+        !snapshot ||
+        typeof snapshot !== "object"
+    ) {
+        return snapshot;
+    }
+
+
+    const compactValue = (
+        value,
+        key = null
+    ) => {
+
+        if (Array.isArray(value)) {
+
+            return value.map(
+                item =>
+                    compactValue(item)
+            );
+
+        }
+
+
+        if (
+            value &&
+            typeof value === "object"
+        ) {
+
+            const compacted = {};
+
+            for (
+                const [childKey, childValue]
+                of Object.entries(value)
+            ) {
+
+                // Large UI dropdown catalogs are
+                // unnecessary for normal agent reasoning.
+                //
+                // Preserve currentValue, selectedText,
+                // editable, type, unit, min/max/step,
+                // classification, meaning, etc.
+
+                if (
+                    childKey === "options"
+                ) {
+                    continue;
+                }
+
+
+                // Known parser/provenance duplication.
+
+                if (
+                    childKey === "sourceRow" ||
+                    childKey === "pageCode" ||
+                    childKey === "values"
+                ) {
+                    continue;
+                }
+
+
+                compacted[childKey] =
+                    compactValue(
+                        childValue,
+                        childKey
+                    );
+
+            }
+
+            return compacted;
+
+        }
+
+
+        return value;
+    };
+
+
+    return compactValue(
+        snapshot
+    );
 }
