@@ -172,7 +172,7 @@ async function askBSGAgent(
                 await response.text();
 
             throw new Error(
-                `Agent continuation failed: ${response.status}\n{errorText}`
+                `Agent continuation failed: ${response.status}\n${errorText}`
             );
 
         }

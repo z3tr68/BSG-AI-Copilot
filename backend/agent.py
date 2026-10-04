@@ -81,13 +81,52 @@ EVIDENCE AND TOOL USE
 
 
 PLAYER'S GUIDE EVIDENCE:
-- Treat the Player's Guide as the authoritative source for documented BSG rules, mechanics, constraints, and cause-effect relationships.
-- When reasoning or a recommendation materially depends on a BSG mechanic that is not already established by retrieved evidence, use search_players_guide before assuming how the simulator works.
-- Use get_players_guide_section when the search excerpt is insufficient to establish the rule or important qualifications.
-- Do not retrieve Guide material unnecessarily when the relevant mechanic is already established by sufficient evidence.
-- Distinguish documented Player's Guide rules from observed simulator behavior, controlled experiments, historical inference, and user corrections.
-- If observed behavior appears to conflict with the Player's Guide, preserve and report the discrepancy rather than silently treating either as equivalent evidence.
+- Treat the Player's Guide as the authoritative source for documented BSG rules, 
+  mechanics, constraints, and cause-effect relationships.
+- When reasoning or a recommendation materially depends on a BSG mechanic that is 
+  not already established by retrieved evidence, use search_players_guide before 
+  assuming how the simulator works.
+- Use get_players_guide_section when the search excerpt is insufficient to establish 
+  the rule or important qualifications.
+- Do not retrieve Guide material unnecessarily when the relevant mechanic is already
+  established by sufficient evidence.
+- Distinguish documented Player's Guide rules from observed simulator behavior, 
+  controlled experiments, historical inference, and user corrections.
+- If observed behavior appears to conflict with the Player's Guide, preserve and 
+  report the discrepancy rather than silently treating either as equivalent evidence.
 
+PERSISTENT MECHANICS KNOWLEDGE:
+- Persistent mechanics knowledge contains evidence-backed findings learned across 
+  BSG decision work. Search it when prior experiments, observed simulator behavior, 
+  historical findings, user corrections, or retained documented mechanics could 
+  materially affect the current reasoning or prevent repeating earlier work.
+- Do not treat every stored finding as a universal BSG rule. Interpret each finding 
+  according to its source type, source context, confidence, and evidence.
+- Player's Guide findings represent documented rules. Controlled experiments establish 
+  only what was tested under the recorded conditions. Observed UI behavior records 
+  what the simulator displayed or did. Historical inference records conclusions 
+  supported by historical data but not necessarily causal rules. User corrections 
+  record explicit corrections supplied by the user.
+- Record a persistent mechanics finding only when evidence has actually established 
+  something useful beyond the current decision state. Do not persist speculation, 
+  ordinary recommendations, temporary projections, tentative hypotheses, or information 
+  already represented adequately by current session state or historical data.
+- Scope persistent claims narrowly to the evidence. Preserve relevant year, company, 
+  tested range, conditions, or other limitations instead of generalizing a local result 
+  into a universal rule.
+- Keep findings compact. Store the learned mechanic and concise supporting evidence, 
+  not full page snapshots or large report data.
+- Before recording a finding that may duplicate existing knowledge, search mechanics 
+  knowledge for the same topic or claim. Preserve genuinely distinct or conflicting 
+  evidence rather than silently overwriting it.
+- If stored empirical behavior conflicts with the Player's Guide, preserve the 
+  discrepancy and reason from both sources rather than silently treating 
+  either as equivalent evidence.
+- Do not also record a mechanics finding as a session correction merely because the user 
+  supplied the evidence. Use session corrections only when the user is explicitly 
+  correcting an earlier agent claim, interpretation, or stored current-session fact. 
+  A new experiment result or observed simulator behavior belongs in persistent mechanics 
+  knowledge when it meets the recording criteria.
 
 DECISION SEMANTICS
 

@@ -233,6 +233,152 @@ BSG_TOOLS = cast(
 
         {
             "type": "function",
+            "name": "search_mechanics_knowledge",
+            "description": (
+                "Search persistent knowledge learned about BSG mechanics from prior "
+                "controlled experiments, observed simulator behavior, historical "
+                "analysis, user corrections, and retained documented rules. Use this "
+                "when prior learned behavior could materially affect the current "
+                "reasoning or prevent repeating an earlier experiment. This knowledge "
+                "is evidence with provenance, not automatically a universal BSG rule."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": (
+                            "Natural-language description of the BSG mechanic, "
+                            "behavior, experiment, or prior finding to retrieve."
+                        )
+                    },
+                    "sourceType": {
+                        "type": ["string", "null"],
+                        "enum": [
+                            "player_guide",
+                            "controlled_experiment",
+                            "observed_ui",
+                            "historical_inference",
+                            "user_correction",
+                            None
+                        ],
+                        "description": (
+                            "Optional provenance filter. Usually omit unless a "
+                            "specific evidence type is needed."
+                        )
+                    },
+                    "confidence": {
+                        "type": ["string", "null"],
+                        "enum": [
+                            "low",
+                            "medium",
+                            "high",
+                            None
+                        ],
+                        "description": (
+                            "Optional confidence filter. Usually omit so relevant "
+                            "findings are not hidden."
+                        )
+                    }
+                },
+                "required": [
+                    "query"
+                ],
+                "additionalProperties": False
+            }
+        },
+
+        {
+            "type": "function",
+            "name": "record_mechanics_finding",
+            "description": (
+                "Persist a compact, evidence-supported finding about BSG mechanics "
+                "for use in future decision years. Use only for findings actually "
+                "established by a controlled experiment, observed simulator behavior, "
+                "supported historical analysis, explicit user correction, or a "
+                "documented Player's Guide rule worth retaining. Do not store "
+                "speculation, ordinary recommendations, temporary decision state, "
+                "or unsupported assumptions. Scope the claim to what the evidence "
+                "actually establishes."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "topic": {
+                        "type": "string",
+                        "description": (
+                            "Stable retrieval category such as internet_marketing, "
+                            "production, distribution, private_label, finance, "
+                            "facilities, or another concise BSG mechanics topic."
+                        )
+                    },
+                    "claim": {
+                        "type": "string",
+                        "description": (
+                            "Compact statement of what was actually learned. Preserve "
+                            "important limits such as year, tested range, conditions, "
+                            "or company when the evidence is context-specific. Do not "
+                            "generalize beyond the evidence."
+                        )
+                    },
+                    "sourceType": {
+                        "type": "string",
+                        "enum": [
+                            "player_guide",
+                            "controlled_experiment",
+                            "observed_ui",
+                            "historical_inference",
+                            "user_correction"
+                        ],
+                        "description": (
+                            "Provenance category describing how the finding was "
+                            "established."
+                        )
+                    },
+                    "sourceContext": {
+                        "type": "object",
+                        "description": (
+                            "Compact context needed to interpret the evidence, such "
+                            "as phase, year, company, decision page, or Player's Guide "
+                            "section ID."
+                        ),
+                        "additionalProperties": True
+                    },
+                    "confidence": {
+                        "type": "string",
+                        "enum": [
+                            "low",
+                            "medium",
+                            "high"
+                        ],
+                        "description": (
+                            "Confidence supported by the evidence. Do not use high "
+                            "merely because a finding sounds plausible."
+                        )
+                    },
+                    "evidence": {
+                        "type": "string",
+                        "description": (
+                            "Concise description of the observation, comparison, "
+                            "experiment, retrieved data, correction, or documented "
+                            "rule supporting the claim. Do not store full page data."
+                        )
+                    }
+                },
+                "required": [
+                    "topic",
+                    "claim",
+                    "sourceType",
+                    "sourceContext",
+                    "confidence",
+                    "evidence"
+                ],
+                "additionalProperties": False
+            }
+        },
+
+        {
+            "type": "function",
             "name": "get_fir",
             "description": (
                 "Retrieve Footwear Industry Report data for a historical year. "

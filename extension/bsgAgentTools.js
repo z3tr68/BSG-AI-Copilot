@@ -201,6 +201,53 @@ async function executeBSGTool(
 
 
         // ==================================
+        // MECHANICS KNOWLEDGE SEARCH
+        // ==================================
+
+        case "search_mechanics_knowledge": {
+            return await searchMechanicsKnowledge(
+                args.query,
+                {
+                    sourceType:
+                        args.sourceType ?? null,
+
+                    confidence:
+                        args.confidence ?? null,
+
+                    limit: 5
+                }
+            );
+        }
+
+
+        // ==================================
+        // RECORD MECHANICS FINDING
+        // ==================================
+
+        case "record_mechanics_finding": {
+            return await recordMechanicsFinding({
+                topic:
+                    args.topic,
+
+                claim:
+                    args.claim,
+
+                sourceType:
+                    args.sourceType,
+
+                sourceContext:
+                    args.sourceContext ?? {},
+
+                confidence:
+                    args.confidence,
+
+                evidence:
+                    args.evidence ?? ""
+            });
+        }
+
+
+        // ==================================
         // FIR
         // ==================================
 

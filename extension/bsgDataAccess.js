@@ -5197,6 +5197,515 @@ async function resetAgentSession(
 }
 
 
+// ==================================
+// PERSISTENT MECHANICS KNOWLEDGE
+// ==================================
+
+async function loadMechanicsKnowledge() {
+
+    const result =
+        await chrome.storage.local.get(
+            "bsgMechanicsKnowledge"
+        );
+
+    return (
+        result.bsgMechanicsKnowledge ?? {
+            version: 1,
+            findings: []
+        }
+    );
+}
+
+
+async function saveMechanicsKnowledge(
+    knowledge
+) {
+
+    await chrome.storage.local.set({
+        bsgMechanicsKnowledge: knowledge
+    });
+
+    return knowledge;
+}
+
+
+async function recordMechanicsFinding(
+    finding
+) {
+
+    if (!finding || typeof finding !== "object") {
+        throw new Error(
+            "Mechanics finding must be an object."
+        );
+    }
+
+
+    const allowedSourceTypes =
+        new Set([
+            "player_guide",
+            "controlled_experiment",
+            "observed_ui",
+            "historical_inference",
+            "user_correction"
+        ]);
+
+
+    const allowedConfidenceLevels =
+        new Set([
+            "low",
+            "medium",
+            "high"
+        ]);
+
+
+    const topic =
+        String(
+            finding.topic ?? ""
+        ).trim();
+
+
+    const claim =
+        String(
+            finding.claim ?? ""
+        ).trim();
+
+
+    const sourceType =
+        String(
+            finding.sourceType ?? ""
+        ).trim();
+
+
+    const confidence =
+        String(
+            finding.confidence ?? ""
+        ).trim();
+
+
+    if (!topic) {
+        throw new Error(
+            "Mechanics finding topic is required."
+        );
+    }
+
+
+    if (!claim) {
+        throw new Error(
+            "Mechanics finding claim is required."
+        );
+    }
+
+
+    if (
+        !allowedSourceTypes.has(
+            sourceType
+        )
+    ) {
+        throw new Error(
+            `Invalid mechanics source type: ${sourceType}`
+        );
+    }
+
+
+    if (
+        !allowedConfidenceLevels.has(
+            confidence
+        )
+    ) {
+        throw new Error(
+            `Invalid mechanics confidence: ${confidence}`
+        );
+    }
+
+
+    const knowledge =
+        await loadMechanicsKnowledge();
+
+
+    const now =
+        new Date().toISOString();
+
+
+    const record = {
+
+        id:
+            crypto.randomUUID(),
+
+        topic,
+
+        claim,
+
+        sourceType,
+
+        sourceContext:
+            finding.sourceContext &&
+            typeof finding.sourceContext === "object"
+                ? finding.sourceContext
+                : {},
+
+        confidence,
+
+        evidence:
+            String(
+                finding.evidence ?? ""
+            ).trim(),
+
+        createdAt:
+            now,
+
+        updatedAt:
+            now
+    };
+
+
+    knowledge.findings.push(
+        record
+    );
+
+
+    await saveMechanicsKnowledge(
+        knowledge
+    );
+
+
+    return record;
+}
+
+
+async function searchMechanicsKnowledge(
+    query,
+    options = {}
+) {
+
+    const knowledge =
+        await loadMechanicsKnowledge();
+
+
+    const normalizedQuery =
+        normalizeMechanicsSearchText(
+            query
+        );
+
+
+    if (!normalizedQuery) {
+        throw new Error(
+            "Mechanics knowledge search query is required."
+        );
+    }
+
+
+    const limit =
+        Math.max(
+            1,
+            Math.min(
+                Number(options.limit) || 5,
+                10
+            )
+        );
+
+
+    const mechanicsStopWords =
+        new Set([
+            "a",
+            "an",
+            "and",
+            "are",
+            "be",
+            "did",
+            "do",
+            "does",
+            "from",
+            "how",
+            "in",
+            "is",
+            "it",
+            "of",
+            "on",
+            "the",
+            "to",
+            "was",
+            "were",
+            "what",
+            "when",
+            "where",
+            "which",
+            "who",
+            "why",
+            "we"
+        ]);
+
+
+    const queryTerms =
+        normalizedQuery
+            .split(" ")
+            .filter(term =>
+                term.length >= 3 &&
+                !mechanicsStopWords.has(term)
+            );
+
+
+    const sourceTypeFilter =
+        options.sourceType ?? null;
+
+
+    const confidenceFilter =
+        options.confidence ?? null;
+
+
+    const scoredFindings =
+        knowledge.findings
+            .filter(finding => {
+
+                if (
+                    sourceTypeFilter &&
+                    finding.sourceType !==
+                        sourceTypeFilter
+                ) {
+                    return false;
+                }
+
+
+                if (
+                    confidenceFilter &&
+                    finding.confidence !==
+                        confidenceFilter
+                ) {
+                    return false;
+                }
+
+
+                return true;
+            })
+            .map(finding => {
+
+                const topic =
+                    normalizeMechanicsSearchText(
+                        finding.topic
+                    );
+
+
+                const claim =
+                    normalizeMechanicsSearchText(
+                        finding.claim
+                    );
+
+
+                const evidence =
+                    normalizeMechanicsSearchText(
+                        finding.evidence
+                    );
+
+
+                const sourceContext =
+                    normalizeMechanicsSearchText(
+                        flattenMechanicsSourceContext(
+                            finding.sourceContext
+                        )
+                    );
+
+
+                let score = 0;
+
+
+                // Exact query matches.
+
+                if (
+                    topic.includes(
+                        normalizedQuery
+                    )
+                ) {
+                    score += 40;
+                }
+
+
+                if (
+                    claim.includes(
+                        normalizedQuery
+                    )
+                ) {
+                    score += 30;
+                }
+
+
+                if (
+                    evidence.includes(
+                        normalizedQuery
+                    )
+                ) {
+                    score += 15;
+                }
+
+
+                // Individual term matches.
+
+                for (const term of queryTerms) {
+
+                    if (topic.includes(term)) {
+                        score += 12;
+                    }
+
+
+                    if (claim.includes(term)) {
+                        score += 10;
+                    }
+
+
+                    if (evidence.includes(term)) {
+                        score += 4;
+                    }
+
+
+                    if (
+                        sourceContext.includes(
+                            term
+                        )
+                    ) {
+                        score += 2;
+                    }
+                }
+
+
+                const matchedTerms =
+                    queryTerms.filter(term =>
+                        topic.includes(term) ||
+                        claim.includes(term) ||
+                        evidence.includes(term) ||
+                        sourceContext.includes(term)
+                    ).length;
+
+
+                if (matchedTerms >= 2) {
+                    score +=
+                        matchedTerms * 5;
+                }
+
+
+                return {
+                    finding,
+                    score
+                };
+            })
+            .filter(result =>
+                result.score > 0
+            )
+            .sort((a, b) => {
+
+                if (b.score !== a.score) {
+                    return (
+                        b.score -
+                        a.score
+                    );
+                }
+
+
+                return (
+                    new Date(
+                        b.finding.updatedAt
+                    ).getTime() -
+                    new Date(
+                        a.finding.updatedAt
+                    ).getTime()
+                );
+            })
+            .slice(
+                0,
+                limit
+            );
+
+
+    return {
+        query,
+
+        filters: {
+            sourceType:
+                sourceTypeFilter,
+
+            confidence:
+                confidenceFilter
+        },
+
+        results:
+            scoredFindings.map(
+                ({ finding, score }) => ({
+                    id:
+                        finding.id,
+
+                    topic:
+                        finding.topic,
+
+                    claim:
+                        finding.claim,
+
+                    sourceType:
+                        finding.sourceType,
+
+                    sourceContext:
+                        finding.sourceContext,
+
+                    confidence:
+                        finding.confidence,
+
+                    evidence:
+                        finding.evidence,
+
+                    score,
+
+                    createdAt:
+                        finding.createdAt,
+
+                    updatedAt:
+                        finding.updatedAt
+                })
+            )
+    };
+}
+
+
+function normalizeMechanicsSearchText(
+    value
+) {
+
+    return String(
+        value ?? ""
+    )
+        .toLowerCase()
+        .replace(
+            /['’]/g,
+            ""
+        )
+        .replace(
+            /[^a-z0-9]+/g,
+            " "
+        )
+        .replace(
+            /\s+/g,
+            " "
+        )
+        .trim();
+}
+
+
+function flattenMechanicsSourceContext(
+    sourceContext
+) {
+
+    if (
+        !sourceContext ||
+        typeof sourceContext !== "object"
+    ) {
+        return "";
+    }
+
+
+    return Object.entries(
+        sourceContext
+    )
+        .map(
+            ([key, value]) =>
+                `${key} ${String(value)}`
+        )
+        .join(" ");
+}
 //#endregion
 
 //#region flag for later
