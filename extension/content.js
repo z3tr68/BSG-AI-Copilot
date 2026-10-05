@@ -11634,31 +11634,16 @@ function parseCelebrityEndorsementsPage(
 
     }
 
-    // Input mapping
-    const celebrityOfferInputIds = {
-
-        ladyHaHa:
-            "entry-input-G408",
-
-        billyEyelash:
-            "entry-input-G409",
-
-        taylorSluggish:
-            "entry-input-G410",
-
-        bronkoMars:
-            "entry-input-G411",
-
-        chefCurry:
-            "entry-input-G412",
-
-        jayXYZ:
-            "entry-input-G413",
-
-        skatelynPark:
-            "entry-input-G414"
-
-    };
+    // Celebrity offer inputs are dynamic by year.
+    // BSG only renders offer inputs for celebrities currently available for offer.
+    // Preserve DOM order and map them to "NOW" celebrity rows in table order.
+    const celebrityOfferInputs = (
+        data.inputs || []
+    ).filter(input =>
+        input.id?.startsWith("entry-input-G") &&
+        input.id !== "entry-input-G464"
+    );
+    
 
     let year = null;
 
@@ -11692,6 +11677,9 @@ function parseCelebrityEndorsementsPage(
     const celebrityRows =
         celebrityTable?.rows
             ?.slice(2) || [];
+    
+
+    let offerInputIndex = 0;
 
 
     celebrityRows.forEach(
@@ -11732,18 +11720,20 @@ function parseCelebrityEndorsementsPage(
                 row[8] ?? null;
 
 
-            const offerInputId =
-                celebrityOfferInputIds[
-                    key
-                ] ?? null;
-
+            const isAvailableNow =
+                String(availableForOffer)
+                    .trim()
+                    .toUpperCase() === "NOW";
 
             const offerInput =
-                offerInputId
-                    ? getInput(
-                        offerInputId
-                    )
+                isAvailableNow
+                    ? celebrityOfferInputs[
+                        offerInputIndex++
+                    ] ?? null
                     : null;
+
+            const offerInputId =
+                offerInput?.id ?? null;
 
 
             const currentOffer =
@@ -11819,6 +11809,16 @@ function parseCelebrityEndorsementsPage(
 
         }
     );
+
+    if (offerInputIndex !== celebrityOfferInputs.length) {
+        console.warn(
+            "Celebrity offer input mapping mismatch:",
+            {
+                mappedInputs: offerInputIndex,
+                availableInputs: celebrityOfferInputs.length
+            }
+        );
+    }
 
     const decisionMetadata = {
 
