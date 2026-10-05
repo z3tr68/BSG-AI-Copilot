@@ -433,6 +433,42 @@ async function executeBSGTool(
             );
         }
 
+        case "compare_years": {
+            const industry =
+                await getActiveIndustry();
+
+            const simulation =
+                await getSimulationInfo(
+                    industry
+                );
+
+            const company =
+                simulation?.userCompany;
+
+            if (!company) {
+                throw new Error(
+                    `User company not found for Industry ${industry}.`
+                );
+            }
+
+            if (
+                !Array.isArray(args.years) ||
+                args.years.length !== 2
+            ) {
+                throw new Error(
+                    "compare_years requires exactly two years."
+                );
+            }
+
+            return await compareYears(
+                industry,
+                args.years[0],
+                args.years[1],
+                company,
+                args.domains ?? undefined
+            );
+        }
+
         case "calculate_change": {
 
             return calculateChanges(

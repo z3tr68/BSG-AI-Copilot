@@ -1014,6 +1014,62 @@ BSG_TOOLS = cast(
 
         {
             "type": "function",
+            "name": "compare_years",
+            "description": (
+                "Compare two live BSG historical years for the user's company using a "
+                "compact deterministic summary of factual changes and deltas. "
+                "Use this as the preferred first-pass tool for cross-year historical "
+                "diagnosis before making many separate FIR or COR calls. "
+                "The tool reports facts and numeric changes only; interpret strategic "
+                "causes, implications, and recommendations yourself. "
+                "Use targeted FIR, CIR, or COR retrieval afterward only when additional "
+                "detail is needed."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "years": {
+                        "type": "array",
+                        "description": (
+                            "Exactly two live historical years to compare, ordered "
+                            "from baseline year to comparison year."
+                        ),
+                        "items": {
+                            "type": "integer"
+                        },
+                        "minItems": 2,
+                        "maxItems": 2
+                    },
+                    "domains": {
+                        "type": "array",
+                        "description": (
+                            "Optional comparison domains. Omit to use all supported "
+                            "domains."
+                        ),
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "scoreboard",
+                                "financials",
+                                "branded_production",
+                                "internet",
+                                "wholesale",
+                                "inventory"
+                            ]
+                        },
+                        "minItems": 1,
+                        "uniqueItems": True
+                    }
+                },
+                "required": [
+                    "years"
+                ],
+                "additionalProperties": False
+            }
+        },
+
+        {
+            "type": "function",
             "name": "calculate_change",
             "description": (
                 "Calculate absolute and percentage changes between numeric values. "

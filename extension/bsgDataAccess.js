@@ -183,18 +183,17 @@ async function getRates(
 }
 
 
-// ==========================================
-// GET YEAR
-// ==========================================
-
-async function getYearData(industry, year) {
-    const industryData = await getIndustryData(industry);
-    const numericYear = Number(year);
+function getYearDataFromIndustry(
+    industryData,
+    industry,
+    year
+) {
+    const numericYear =
+        Number(year);
 
     // Year 10 is the canonical shared starting baseline.
-    // It is intentionally stored once instead of under live years.
     if (numericYear === 10) {
-        if (!industryData.startingData) {
+        if (!industryData?.startingData) {
             throw new Error(
                 `Canonical Year 10 starting data not found for Industry ${industry}.`
             );
@@ -205,8 +204,13 @@ async function getYearData(industry, year) {
 
     // Years 11+ are LIVE historical results only.
     // Practice data is never consulted here.
-    const yearKey = `year_${numericYear}`;
-    const yearData = industryData.years?.[yearKey];
+    const yearKey =
+        `year_${numericYear}`;
+
+    const yearData =
+        industryData
+            ?.years
+            ?.[yearKey];
 
     if (!yearData) {
         throw new Error(
@@ -215,6 +219,24 @@ async function getYearData(industry, year) {
     }
 
     return yearData;
+}
+
+// ==========================================
+// GET YEAR
+// ==========================================
+
+async function getYearData(
+    industry,
+    year
+) {
+    const industryData =
+        await getIndustryData(industry);
+
+    return getYearDataFromIndustry(
+        industryData,
+        industry,
+        year
+    );
 }
 
 
@@ -1848,6 +1870,1249 @@ async function compareCompanies(
     return comparison;
 }
 
+
+// ==========================================
+// COMPARE COMPANIES
+// ==========================================
+
+async function compareYears(
+    industry,
+    yearA,
+    yearB,
+    company,
+    domains = [
+        "scoreboard",
+        "financials",
+        "branded_production",
+        "internet",
+        "wholesale",
+        "inventory",
+    ]
+) {
+    const SUPPORTED_DOMAINS = new Set([
+        "scoreboard",
+        "financials",
+        "branded_production",
+        "internet",
+        "wholesale",
+        "inventory",
+    ]);
+
+    if (!Number.isInteger(yearA) || !Number.isInteger(yearB)) {
+        throw new Error("compareYears requires two integer years.");
+    }
+
+    if (yearA === yearB) {
+        throw new Error("compareYears requires two different years.");
+    }
+
+    if (!company) {
+        throw new Error("compareYears requires a company.");
+    }
+
+    
+    const industryData =
+        await getIndustryData(
+            industry
+        );
+
+    const yearDataA =
+        getYearDataFromIndustry(
+            industryData,
+            industry,
+            yearA
+        );
+
+    const yearDataB =
+        getYearDataFromIndustry(
+            industryData,
+            industry,
+            yearB
+        );
+
+    const getComparisonFIR = (
+            year,
+            page
+        ) => {
+            const yearData =
+                Number(year) === Number(yearA)
+                    ? yearDataA
+                    : Number(year) === Number(yearB)
+                        ? yearDataB
+                        : null;
+
+            if (!yearData) {
+                throw new Error(
+                    `Year ${year} is not part of this comparison.`
+                );
+            }
+
+            const normalized =
+                yearData
+                    ?.FIR
+                    ?.normalizedData;
+
+            if (!normalized) {
+                throw new Error(
+                    `Normalized FIR data not found for Year ${year}.`
+                );
+            }
+
+            const pageData =
+                normalized
+                    ?.pages
+                    ?.[page];
+
+            if (!pageData) {
+                throw new Error(
+                    `FIR page "${page}" not found for Year ${year}.`
+                );
+            }
+
+            return {
+                industry,
+                year: Number(year),
+                reportType: "FIR",
+                page,
+                data: pageData
+            };
+        };
+
+    const getComparisonCOR = (
+        year,
+        section,
+        region = null
+    ) => {
+        const yearData =
+            Number(year) === Number(yearA)
+                ? yearDataA
+                : Number(year) === Number(yearB)
+                    ? yearDataB
+                    : null;
+
+        if (!yearData) {
+            throw new Error(
+                `Year ${year} is not part of this comparison.`
+            );
+        }
+
+        const normalized =
+            yearData
+                ?.COR
+                ?.normalizedData;
+
+
+        const sectionData =
+            normalized
+                ?.sections
+                ?.[section];
+
+        if (!sectionData) {
+            throw new Error(
+                `COR section "${section}" not found for Year ${year}.`
+            );
+        }
+
+        if (!region) {
+            return {
+                industry,
+                year,
+                reportType: "COR",
+
+                company:
+                    normalized
+                        ?.metadata
+                        ?.companyLetter,
+
+                section,
+                data: sectionData
+            };
+        }
+
+        const regionData =
+            sectionData
+                ?.regions
+                ?.[region];
+
+        if (!regionData) {
+            throw new Error(
+                `Region "${region}" not found in COR section "${section}".`
+            );
+        }
+
+        return {
+            industry,
+            year,
+            reportType: "COR",
+
+            company:
+                normalized
+                    ?.metadata
+                    ?.companyLetter,
+
+            section,
+            region,
+            data: regionData
+        };
+    };
+
+    //helpers
+
+    const requestedDomains = Array.isArray(domains)
+        ? [...new Set(domains)]
+        : [];
+
+    if (requestedDomains.length === 0) {
+        throw new Error("compareYears requires at least one domain.");
+    }
+
+    const invalidDomains = requestedDomains.filter(
+        domain => !SUPPORTED_DOMAINS.has(domain)
+    );
+
+    if (invalidDomains.length > 0) {
+        throw new Error(
+            `Unsupported compareYears domain(s): ${invalidDomains.join(", ")}`
+        );
+    }
+
+    const round = (value, digits = 2) => {
+        if (!Number.isFinite(value)) return null;
+
+        const factor = 10 ** digits;
+        return Math.round((value + Number.EPSILON) * factor) / factor;
+    };
+
+    const toNumber = value => {
+        if (typeof value === "number") {
+            return Number.isFinite(value) ? value : null;
+        }
+
+        if (typeof value !== "string") {
+            return null;
+        }
+
+        const cleaned = value
+            .replace(/[$,%]/g, "")
+            .replace(/,/g, "")
+            .trim();
+
+        if (!cleaned) return null;
+
+        const parsed = Number(cleaned);
+        return Number.isFinite(parsed) ? parsed : null;
+    };
+
+    const compareValue = (before, after, options = {}) => {
+        const {
+            pctChange = true,
+            digits = 2
+        } = options;
+
+        const a = toNumber(before);
+        const b = toNumber(after);
+
+        if (a === null || b === null) {
+            return {
+                [yearA]: before ?? null,
+                [yearB]: after ?? null,
+                delta: null,
+                ...(pctChange ? { pctChange: null } : {})
+            };
+        }
+
+        const result = {
+            [yearA]: round(a, digits),
+            [yearB]: round(b, digits),
+            delta: round(b - a, digits)
+        };
+
+        if (pctChange) {
+            result.pctChange =
+                a !== 0
+                    ? round(((b - a) / Math.abs(a)) * 100, 1)
+                    : null;
+        }
+
+        return result;
+    };
+
+
+    const getFIRRows = fir =>
+        fir?.data?.rows ?? [];
+
+    const getCompanyValue = (row, companyCode) =>
+        row?.companyValues?.[companyCode] ?? null;
+
+    const findRowByIndex = (fir, index) =>
+        getFIRRows(fir)[index] ?? null;
+
+    const compareFIRRows = (
+        firA,
+        firB,
+        index,
+        options = {}
+    ) => {
+        const rowA = findRowByIndex(firA, index);
+        const rowB = findRowByIndex(firB, index);
+
+        return compareValue(
+            getCompanyValue(rowA, company),
+            getCompanyValue(rowB, company),
+            options
+        );
+    };
+
+    const findYearRowInBlock = (
+        fir,
+        startIndex,
+        targetYear
+    ) => {
+        const rows = getFIRRows(fir);
+
+        for (
+            let i = startIndex;
+            i < rows.length;
+            i++
+        ) {
+            const label = String(rows[i]?.label ?? "");
+
+            if (
+                i > startIndex &&
+                (
+                    label.includes("Wgtd Avg") ||
+                    label.includes("Yx Score") ||
+                    label.includes("3-Yr Avg") ||
+                    label.includes("GTD Score")
+                )
+            ) {
+                break;
+            }
+
+            if (
+                label.includes(`Y${targetYear}`) ||
+                (
+                    targetYear === 11 &&
+                    label.includes("| Y11")
+                )
+            ) {
+                return rows[i];
+            }
+        }
+
+        return null;
+    };
+
+    const compareHistoricalFIRMetric = (
+        firA,
+        firB,
+        startIndex,
+        options = {}
+    ) => {
+        const rowA = findYearRowInBlock(
+            firA,
+            startIndex,
+            yearA
+        );
+
+        const rowB = findYearRowInBlock(
+            firB,
+            startIndex,
+            yearB
+        );
+
+        return compareValue(
+            getCompanyValue(rowA, company),
+            getCompanyValue(rowB, company),
+            options
+        );
+    };
+
+    const getCORRows = cor =>
+        Array.isArray(cor?.data)
+            ? cor.data
+            : [];
+
+    const getCORValue = row => {
+        if (!row?.values) return null;
+
+        const values = Object.values(row.values);
+
+        return values.length > 0
+            ? values[0]
+            : null;
+    };
+
+    const findCORRow = (cor, predicate) =>
+        getCORRows(cor).find(predicate) ?? null;
+
+    const findCORRowByLabel = (
+        cor,
+        label
+    ) =>
+        findCORRow(
+            cor,
+            row => row?.label === label
+        );
+
+    const compareCORRows = (
+        corA,
+        corB,
+        label,
+        options = {}
+    ) => {
+        const rowA = findCORRowByLabel(
+            corA,
+            label
+        );
+
+        const rowB = findCORRowByLabel(
+            corB,
+            label
+        );
+
+        return compareValue(
+            getCORValue(rowA),
+            getCORValue(rowB),
+            options
+        );
+    };
+
+    const getNestedCORRows = cor =>
+        Array.isArray(cor?.data?.rows)
+            ? cor.data.rows
+            : [];
+
+    const BRANDED_FACILITIES = {
+        "North America": 0,
+        "Europe-Africa": 9,
+        "Asia-Pacific": 18,
+        "Latin America": 27
+    };
+
+    const getBrandedFacilityMetric = (
+        cor,
+        region,
+        offset
+    ) => {
+        const rows = getNestedCORRows(cor);
+        const startIndex =
+            BRANDED_FACILITIES[region];
+
+        if (startIndex === undefined) {
+            return null;
+        }
+
+        return getCORValue(
+            rows[startIndex + offset]
+        );
+    };
+
+    const compareBrandedFacilityMetric = (
+        corA,
+        corB,
+        region,
+        offset,
+        options = {}
+    ) =>
+        compareValue(
+            getBrandedFacilityMetric(
+                corA,
+                region,
+                offset
+            ),
+            getBrandedFacilityMetric(
+                corB,
+                region,
+                offset
+            ),
+            options
+        );
+
+    //end of helpers
+
+
+    const result = {
+        company,
+        years: [yearA, yearB],
+        domains: {}
+    };
+
+    const domainBuilders = {};
+
+    /*
+     * SCOREBOARD
+     */
+    domainBuilders.scoreboard = async () => {
+        const [a, b] = await Promise.all([
+            getComparisonFIR(yearA, "scoreboard"),
+            getComparisonFIR(yearB, "scoreboard")
+        ]);
+
+        return {
+            yearScore: {
+                rank: compareFIRRows(
+                    a,
+                    b,
+                    0,
+                    {
+                        pctChange: false,
+                        digits: 0
+                    }
+                ),
+
+                investorExpectation: compareFIRRows(
+                    a,
+                    b,
+                    1,
+                    {
+                        pctChange: false,
+                        digits: 0
+                    }
+                ),
+
+                bestInIndustry: compareFIRRows(
+                    a,
+                    b,
+                    2,
+                    {
+                        pctChange: false,
+                        digits: 0
+                    }
+                ),
+
+                overall: compareFIRRows(
+                    a,
+                    b,
+                    3,
+                    {
+                        pctChange: false,
+                        digits: 0
+                    }
+                )
+            },
+
+            gameToDate: {
+                rank: compareFIRRows(
+                    a,
+                    b,
+                    5,
+                    {
+                        pctChange: false,
+                        digits: 0
+                    }
+                ),
+
+                investorExpectation: compareFIRRows(
+                    a,
+                    b,
+                    6,
+                    {
+                        pctChange: false,
+                        digits: 0
+                    }
+                ),
+
+                bestInIndustry: compareFIRRows(
+                    a,
+                    b,
+                    7,
+                    {
+                        pctChange: false,
+                        digits: 0
+                    }
+                ),
+
+                overall: compareFIRRows(
+                    a,
+                    b,
+                    8,
+                    {
+                        pctChange: false,
+                        digits: 0
+                    }
+                ),
+
+                bonusPoints: compareFIRRows(
+                    a,
+                    b,
+                    9,
+                    {
+                        pctChange: false,
+                        digits: 0
+                    }
+                ),
+
+                score: compareFIRRows(
+                    a,
+                    b,
+                    10,
+                    {
+                        pctChange: false,
+                        digits: 0
+                    }
+                )
+            }
+        };
+    };
+
+    /*
+     * FINANCIALS
+     *
+     * We intentionally combine a few compact FIR pages here rather
+     * than returning any of those pages to the agent.
+     */
+    domainBuilders.financials = async () => {
+        const [
+            financialA,
+            financialB,
+            performanceA,
+            performanceB,
+            creditA,
+            creditB
+        ] = await Promise.all([
+            getComparisonFIR(yearA, "financial_statistics"),
+            getComparisonFIR(yearB, "financial_statistics"),
+            getComparisonFIR(yearA, "eps_roe_stock_price"),
+            getComparisonFIR(yearB, "eps_roe_stock_price"),
+            getComparisonFIR(yearA, "credit_image_csrc"),
+            getComparisonFIR(yearB, "credit_image_csrc")
+        ]);
+
+        const convertRatioComparisonToPercent = comparison => {
+            if (!comparison) return comparison;
+
+            return {
+                [yearA]:
+                    comparison[yearA] !== null
+                        ? round(comparison[yearA] * 100, 1)
+                        : null,
+
+                [yearB]:
+                    comparison[yearB] !== null
+                        ? round(comparison[yearB] * 100, 1)
+                        : null,
+
+                delta:
+                    comparison.delta !== null
+                        ? round(comparison.delta * 100, 1)
+                        : null
+            };
+        };
+
+        const financials = {
+            revenue: compareFIRRows(
+                financialA,
+                financialB,
+                3
+            ),
+
+            operatingProfit: compareFIRRows(
+                financialA,
+                financialB,
+                8
+            ),
+
+            netProfit: compareFIRRows(
+                financialA,
+                financialB,
+                11
+            ),
+
+            cashOnHand: compareFIRRows(
+                financialA,
+                financialB,
+                12
+            ),
+
+            totalAssets: compareFIRRows(
+                financialA,
+                financialB,
+                15
+            ),
+
+            totalLiabilities: compareFIRRows(
+                financialA,
+                financialB,
+                18
+            ),
+
+            endingEquity: compareFIRRows(
+                financialA,
+                financialB,
+                22
+            ),
+
+            operatingProfitMargin: compareFIRRows(
+                financialA,
+                financialB,
+                24,
+                {
+                    pctChange: false,
+                    digits: 4
+                }
+            ),
+
+            netProfitMargin: compareFIRRows(
+                financialA,
+                financialB,
+                25,
+                {
+                    pctChange: false,
+                    digits: 4
+                }
+            ),
+
+            interestCoverage: compareFIRRows(
+                financialA,
+                financialB,
+                29
+            ),
+
+            debtToAssets: compareFIRRows(
+                financialA,
+                financialB,
+                30,
+                {
+                    pctChange: false,
+                    digits: 4
+                }
+            ),
+
+            daysInventory: compareFIRRows(
+                financialA,
+                financialB,
+                34,
+                {
+                    pctChange: false,
+                    digits: 0
+                }
+            ),
+
+            sharesOutstanding: compareFIRRows(
+                financialA,
+                financialB,
+                35,
+                {
+                    digits: 0
+                }
+            ),
+
+            eps: compareHistoricalFIRMetric(
+                performanceA,
+                performanceB,
+                0
+            ),
+
+            roe: compareHistoricalFIRMetric(
+                performanceA,
+                performanceB,
+                18,
+                {
+                    pctChange: false,
+                    digits: 4
+                }
+            ),
+
+            stockPrice: compareHistoricalFIRMetric(
+                performanceA,
+                performanceB,
+                36
+            ),
+
+            imageRating: compareHistoricalFIRMetric(
+                creditA,
+                creditB,
+                16,
+                {
+                    pctChange: false,
+                    digits: 0
+                }
+            )
+        };
+
+        for (const metric of [
+            "operatingProfitMargin",
+            "netProfitMargin",
+            "debtToAssets",
+            "roe"
+        ]) {
+            financials[metric] =
+                convertRatioComparisonToPercent(
+                    financials[metric]
+                );
+        }
+
+        financials.units = {
+            revenue: "$000s",
+            operatingProfit: "$000s",
+            netProfit: "$000s",
+            cashOnHand: "$000s",
+            totalAssets: "$000s",
+            totalLiabilities: "$000s",
+            endingEquity: "$000s",
+            operatingProfitMargin: "%",
+            netProfitMargin: "%",
+            interestCoverage: "x",
+            debtToAssets: "%",
+            daysInventory: "days",
+            sharesOutstanding: "000s",
+            eps: "$/share",
+            roe: "%",
+            stockPrice: "$/share",
+            imageRating: "points"
+        };
+
+        return financials;
+    };
+
+    const compareMarketRegion = (
+        corA,
+        corB
+    ) => {
+        const operatingProfit =
+            compareCORRows(
+                corA,
+                corB,
+                "Operating Profit / Loss"
+            );
+
+        const pairsSold =
+            compareCORRows(
+                corA,
+                corB,
+                "Segment | Current ----- | Pairs Sold (000s)",
+                {
+                    digits: 0
+                }
+            );
+
+        const marketShare =
+            compareCORRows(
+                corA,
+                corB,
+                "Statistics | Year | Market Share (%)",
+                {
+                    pctChange: false,
+                    digits: 4
+                }
+            );
+
+        /*
+        * There are two rows named "Operating Profit Margin (%)":
+        * current year and prior year.
+        *
+        * The current-year row is the first occurrence.
+        */
+        const marginRowA =
+            findCORRow(
+                corA,
+                row =>
+                    row?.label ===
+                    "Operating Profit Margin (%)"
+            );
+
+        const marginRowB =
+            findCORRow(
+                corB,
+                row =>
+                    row?.label ===
+                    "Operating Profit Margin (%)"
+            );
+
+        const operatingProfitMargin =
+            compareValue(
+                getCORValue(marginRowA),
+                getCORValue(marginRowB),
+                {
+                    pctChange: false,
+                    digits: 4
+                }
+            );
+
+        const convertToPercent =
+            comparison => ({
+                [yearA]:
+                    comparison[yearA] !== null
+                        ? round(
+                            comparison[yearA] * 100,
+                            1
+                        )
+                        : null,
+
+                [yearB]:
+                    comparison[yearB] !== null
+                        ? round(
+                            comparison[yearB] * 100,
+                            1
+                        )
+                        : null,
+
+                delta:
+                    comparison.delta !== null
+                        ? round(
+                            comparison.delta * 100,
+                            1
+                        )
+                        : null
+            });
+
+        return {
+            pairsSold,
+            marketShare:
+                convertToPercent(marketShare),
+            operatingProfit,
+            operatingProfitMargin:
+                convertToPercent(
+                    operatingProfitMargin
+                )
+        };
+    };
+
+    /*
+     * BRANDED PRODUCTION
+     */
+    domainBuilders.branded_production =
+        async () => {
+            const [a, b] = await Promise.all([
+                getComparisonCOR(
+                    yearA,
+                    "branded_production"
+                ),
+                getComparisonCOR(
+                    yearB,
+                    "branded_production"
+                )
+            ]);
+
+            const facilities = {};
+
+            for (
+                const region of
+                Object.keys(BRANDED_FACILITIES)
+            ) {
+                const pairsProduced =
+                    compareBrandedFacilityMetric(
+                        a,
+                        b,
+                        region,
+                        0,
+                        {
+                            digits: 0
+                        }
+                    );
+
+                if (
+                    pairsProduced[yearA] === 0 &&
+                    pairsProduced[yearB] === 0
+                ) {
+                    continue;
+                }
+
+                facilities[region] = {
+                    pairsProduced,
+
+                    sQRating:
+                        compareBrandedFacilityMetric(
+                            a,
+                            b,
+                            region,
+                            1,
+                            {
+                                pctChange: false,
+                                digits: 1
+                            }
+                        ),
+
+                    models:
+                        compareBrandedFacilityMetric(
+                            a,
+                            b,
+                            region,
+                            2,
+                            {
+                                pctChange: false,
+                                digits: 0
+                            }
+                        ),
+
+                    productionCost:
+                        compareBrandedFacilityMetric(
+                            a,
+                            b,
+                            region,
+                            3
+                        ),
+
+                    costPerPair:
+                        compareBrandedFacilityMetric(
+                            a,
+                            b,
+                            region,
+                            4
+                        )
+                };
+            }
+
+            const totalForYear = year =>
+                Object.values(facilities)
+                    .reduce(
+                        (sum, facility) =>
+                            sum +
+                            (
+                                facility
+                                    ?.pairsProduced
+                                    ?.[year] ?? 0
+                            ),
+                        0
+                    );
+
+            return {
+                facilities,
+
+                totalPairsProduced:
+                    compareValue(
+                        totalForYear(yearA),
+                        totalForYear(yearB),
+                        {
+                            digits: 0
+                        }
+                    ),
+
+                units: {
+                    pairsProduced: "000 pairs",
+                    sQRating: "stars",
+                    models: "models",
+                    productionCost: "$000s",
+                    costPerPair: "$/pair",
+                    totalPairsProduced: "000 pairs"
+                }
+            };
+        };
+
+    /*
+     * INTERNET + WHOLESALE
+     */
+    const MARKET_REGIONS = [
+        "North America",
+        "Europe-Africa",
+        "Asia-Pacific",
+        "Latin America"
+    ];
+
+
+    const compareMarketSection =
+        async section => {
+            const output = {
+                regions: {}
+            };
+
+            const regionResults = await Promise.all(
+                MARKET_REGIONS.map(
+                    async region => {
+                        const [a, b] =
+                            await Promise.all([
+                                getComparisonCOR(
+                                    yearA,
+                                    section,
+                                    region
+                                ),
+                                getComparisonCOR(
+                                    yearB,
+                                    section,
+                                    region
+                                )
+                            ]);
+
+                        return [
+                            region,
+                            compareMarketRegion(
+                                a,
+                                b
+                            )
+                        ];
+                    }
+                )
+            );
+
+            for (
+                const [region, comparison]
+                of regionResults
+            ) {
+                output.regions[region] =
+                    comparison;
+            }
+
+            const sumMetric = (
+                metric,
+                year
+            ) =>
+                Object.values(output.regions)
+                    .reduce(
+                        (sum, region) =>
+                            sum +
+                            (
+                                region?.[metric]?.[year] ??
+                                0
+                            ),
+                        0
+                    );
+
+            const pairsA =
+                sumMetric("pairsSold", yearA);
+
+            const pairsB =
+                sumMetric("pairsSold", yearB);
+
+            const profitA =
+                sumMetric(
+                    "operatingProfit",
+                    yearA
+                );
+
+            const profitB =
+                sumMetric(
+                    "operatingProfit",
+                    yearB
+                );
+
+            output.overall = {
+                pairsSold: compareValue(
+                    pairsA,
+                    pairsB,
+                    {
+                        digits: 0
+                    }
+                ),
+
+                operatingProfit: compareValue(
+                    profitA,
+                    profitB
+                )
+            };
+
+            output.units = {
+                pairsSold: "000 pairs",
+                marketShare: "%",
+                operatingProfit: "$000s",
+                operatingProfitMargin: "%"
+            };
+
+            return output;
+        };
+
+    domainBuilders.internet = async () =>
+        compareMarketSection(
+            "internet_market_performance"
+        );
+
+    domainBuilders.wholesale = async () =>
+        compareMarketSection(
+            "wholesale_market_performance"
+        );
+
+    /*
+     * INVENTORY
+     */
+    domainBuilders.inventory = async () => {
+        const inventory = {
+            regions: {}
+        };
+
+        const regionResults =
+            await Promise.all(
+                MARKET_REGIONS.map(
+                    async region => {
+                        const [a, b] =
+                            await Promise.all([
+                                getComparisonCOR(
+                                    yearA,
+                                    "distribution_warehouse",
+                                    region
+                                ),
+
+                                getComparisonCOR(
+                                    yearB,
+                                    "distribution_warehouse",
+                                    region
+                                )
+                            ]);
+
+                        return [
+                            region,
+                            {
+                                requiredInventory:
+                                    compareCORRows(
+                                        a,
+                                        b,
+                                        "Inventory ------------------------- | Required Inventory",
+                                        {
+                                            digits: 0
+                                        }
+                                    ),
+
+                                endingInventory:
+                                    compareCORRows(
+                                        a,
+                                        b,
+                                        "Ending Inventory ------------------------ | Pairs",
+                                        {
+                                            digits: 0
+                                        }
+                                    ),
+
+                                surplusShortfall:
+                                    compareCORRows(
+                                        a,
+                                        b,
+                                        "(pairs) | Inv Surplus/Shortfall",
+                                        {
+                                            digits: 0,
+                                            pctChange: false
+                                        }
+                                    )
+                            }
+                        ];
+                    }
+                )
+            );
+
+        for (
+            const [region, comparison]
+            of regionResults
+        ) {
+            inventory.regions[region] =
+                comparison;
+        }
+
+        inventory.units = {
+            requiredInventory: "000 pairs",
+            endingInventory: "000 pairs",
+            surplusShortfall: "000 pairs"
+        };
+
+        return inventory;
+    };
+
+    const domainEntries = await Promise.all(
+        requestedDomains.map(
+            async domain => [
+                domain,
+                await domainBuilders[domain]()
+            ]
+        )
+    );
+
+    for (
+        const [domain, comparison]
+        of domainEntries
+    ) {
+        result.domains[domain] =
+            comparison;
+}
+
+return result;
+}
 
 // ==========================================
 // GET PRACTICE DATA
