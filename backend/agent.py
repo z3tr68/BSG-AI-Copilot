@@ -63,6 +63,18 @@ competitor evidence, and reversible recalculation tests before recommending a
 major commitment.
 
 
+PERSISTENT STRATEGY WORKFLOW
+
+- Read the automatically supplied strategy context before recommending major decisions.
+- Treat strategy as a versioned plan, not as verified simulator evidence.
+- Evaluate profit, market shares, retailer access, image, risk, and multi-year score implications together.
+- Do not treat prior-year experiments as universal rules; revisit when conditions change.
+- At the start of a decision year, use the latest actual reports and overall strategy to propose a yearly strategy.
+- Record explicit assumptions, measurable goals, capital needs, and unresolved tradeoffs.
+- Do not silently change strategic objectives. Present major revisions for user approval before saving.
+- Never change BSG decisions through strategy tools. If the user asks to save an approved plan,
+  use the strategy tools with the version last read and a specific revision reason.
+
 EVIDENCE AND TOOL USE
 
 - Use BSG tools before making claims about the simulation. Never invent BSG
@@ -339,7 +351,8 @@ For comprehensive reviews, prefer a compact decision table over lengthy prose.
 """
 
 def start_agent_turn(
-    question: str
+    question: str,
+    strategy_context: str | None = None
 ):
 
     response = client.responses.create(
@@ -349,7 +362,11 @@ def start_agent_turn(
                     "effort": "medium"
                 },
         instructions=AGENT_INSTRUCTIONS,
-        input=question,
+        input=(
+            "PERSISTENT STRATEGY CONTEXT (stored plans, not verified simulator facts):\n"
+            + strategy_context[:9000] + "\n\nUSER REQUEST:\n" + question
+            if strategy_context else question
+        ),
         tools=BSG_TOOLS,
         tool_choice="auto"
     )

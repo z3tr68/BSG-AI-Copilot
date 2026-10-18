@@ -46,6 +46,7 @@ class AgentStartRequest(
 ):
 
     question: str
+    strategy_context: str | None = None
 
 
 class ToolOutput(
@@ -86,7 +87,8 @@ def agent_start(
 ):
 
     return start_agent_turn(
-        request.question
+        request.question,
+        request.strategy_context
     )
 
 

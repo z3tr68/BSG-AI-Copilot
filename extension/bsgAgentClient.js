@@ -10,6 +10,8 @@ async function askBSGAgent(
     question
 ) {
 
+    const strategyContext = await getCompactStrategyContext(await getActiveIndustry());
+
     let response =
         await fetch(
             `${BSG_AGENT_API}/agent/start`,
@@ -23,7 +25,8 @@ async function askBSGAgent(
 
                 body:
                     JSON.stringify({
-                        question
+                        question,
+                        strategy_context: strategyContext
                     })
             }
         );

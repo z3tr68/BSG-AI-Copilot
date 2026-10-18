@@ -250,6 +250,37 @@ async function executeBSGTool(
         }
 
 
+        case "get_overall_strategy": {
+
+            return (await getStrategyState(
+                await getActiveIndustry())).overall;
+
+        }
+        case "get_yearly_strategy": {
+
+            return (await getStrategyState(
+                await getActiveIndustry(), args.year)).yearly;
+
+        }
+        case "get_strategy_history": {
+
+            return await getStrategyHistory(
+                await getActiveIndustry(), args.limit ?? 10);
+
+        }
+        case "save_overall_strategy": {
+
+            return await saveStrategyState(
+                await getActiveIndustry(), "overall", null, args.strategy, args.expectedVersion, args.reason);
+
+        }
+        case "save_yearly_strategy": {
+
+            return await saveStrategyState(
+                await getActiveIndustry(), "yearly", args.year, args.strategy, args.expectedVersion, args.reason);
+
+        }
+
         case "get_weekly_report": {
 
             const industry =

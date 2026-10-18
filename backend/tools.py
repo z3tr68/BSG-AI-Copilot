@@ -377,6 +377,108 @@ BSG_TOOLS = cast(
         },
 
         {
+            "type": "function", 
+            "name": "get_overall_strategy",
+            "description": "Read persistent, versioned multi-year strategy for the current industry.",
+            "parameters": {
+                "type": "object", 
+                "properties": {}, 
+                "required": [], 
+                "additionalProperties": False
+            }
+        },
+        
+        {
+            "type": "function", 
+            "name": "get_yearly_strategy",
+            "description": "Read the strategy for a specific decision year.",
+            "parameters": {
+                "type": "object", 
+                "properties": {
+                    "year": {
+                        "type": "integer"
+                    }
+                }, 
+                "required": ["year"], 
+                "additionalProperties": False
+            }
+        },
+
+        {
+            "type": "function", 
+            "name": "get_strategy_history",
+            "description": "Read the last N immutable strategy revisions.",
+            "parameters": {
+                "type": "object", 
+                "properties": {
+                    "limit": {
+                        "type": "integer"
+                    }
+                }, 
+                "required": ["limit"], 
+                "additionalProperties": False
+            }
+        },
+
+        {
+            "type": "function",
+            "name": "save_overall_strategy",
+            "description": "Persist a user-approved, version-checked strategy revision; never modifies BSG decisions.",
+            "parameters": {
+                "type": "object", 
+                "properties": {
+                    "strategy": {
+                        "type": "object", 
+                        "additionalProperties": True
+                    }, 
+                    "expectedVersion": {
+                        "type": "integer"
+                    }, 
+                    "reason": {
+                        "type": "string"
+                    }
+                }, 
+                "required": [
+                    "strategy", 
+                    "expectedVersion", 
+                    "reason"
+                ], 
+                "additionalProperties": False
+            }
+        },
+
+        {
+            "type": "function", 
+            "name": "save_yearly_strategy",
+            "description": "Persist a user-approved, version-checked strategy revision; never modifies BSG decisions.",
+            "parameters": {
+                "type": "object", 
+                "properties": {
+                    "year": {
+                        "type": "integer"
+                    }, 
+                    "strategy": {
+                        "type": "object", 
+                        "additionalProperties": True
+                    }, 
+                    "expectedVersion": {
+                        "type": "integer"
+                    }, 
+                    "reason": {
+                        "type": "string"
+                    }
+                }, 
+                "required": [
+                    "year", 
+                    "strategy", 
+                    "expectedVersion", 
+                    "reason"
+                ], 
+                "additionalProperties": False
+            }
+        },
+
+        {
             "type": "function",
             "name": "get_weekly_report",
             "description": (

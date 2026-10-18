@@ -7964,3 +7964,181 @@ async function getFinalDecisionSnapshot(
 }
 
 
+
+
+
+
+// Persistent strategy, isolated by industry. Revisions are immutable snapshots.
+const BSG_STRATEGY_STORAGE_KEY = "bsgStrategyStateV1";
+
+
+async function getStrategyState(industry, year = null) {
+    if (!Number.isInteger(industry)) {
+        throw new Error("Invalid strategy industry");
+    }
+
+    const data = (await chrome.storage.local.get(BSG_STRATEGY_STORAGE_KEY))[BSG_STRATEGY_STORAGE_KEY] || {};
+
+    const record = data[`industry_${industry}`] || {
+        overall: null,
+        yearly: {},
+        history: []
+    };
+
+    return {
+        overall: record.overall || null,
+        yearly: year === null ? null : (record.yearly[`year_${year}`] || null),
+        historyCount: record.history.length
+    };
+}
+
+
+async function getStrategyHistory(industry, limit = 10) {
+    const data = (await chrome.storage.local.get(BSG_STRATEGY_STORAGE_KEY))[BSG_STRATEGY_STORAGE_KEY] || {};
+
+    return (data[`industry_${industry}`]?.history || []).slice(
+        -Math.min(50, Math.max(1, limit))
+    );
+}
+
+
+async function saveStrategyState(industry, scope, year, strategy, expectedVersion, reason) {
+    if (!Number.isInteger(industry)) {
+        throw new Error("Invalid industry");
+    }
+
+    if (!["overall", "yearly"].includes(scope)) {
+        throw new Error("Invalid strategy scope");
+    }
+
+    if (scope === "yearly" && (!Number.isInteger(year) || year < 10 || year > 20)) {
+        throw new Error("Invalid decision year");
+    }
+
+    if (!strategy || typeof strategy !== "object" || Array.isArray(strategy)) {
+        throw new Error("Strategy must be an object");
+    }
+
+    if (!Number.isInteger(expectedVersion) || expectedVersion < 0) {
+        throw new Error("expectedVersion must be >= 0");
+    }
+
+    if (typeof reason !== "string" || !reason.trim()) {
+        throw new Error("Revision reason required");
+    }
+
+    const stored = await chrome.storage.local.get(BSG_STRATEGY_STORAGE_KEY);
+    const all = stored[BSG_STRATEGY_STORAGE_KEY] || {};
+
+    const key = `industry_${industry}`;
+
+    const record = all[key] || {
+        overall: null,
+        yearly: {},
+        history: []
+    };
+
+    const slot = scope === "overall" ? "overall" : `year_${year}`;
+
+    const previous = scope === "overall"
+        ? record.overall
+        : record.yearly[slot];
+
+    const currentVersion = previous?.version || 0;
+
+    if (currentVersion !== expectedVersion) {
+        throw new Error(
+            `Strategy version conflict: expected ${expectedVersion}, current ${currentVersion}. Reload before saving.`
+        );
+    }
+
+    const updated = {
+        version: currentVersion + 1,
+        scope,
+        year: scope === "yearly" ? year : null,
+        strategy: JSON.parse(JSON.stringify(strategy)),
+        reason: reason.trim(),
+        updatedAt: new Date().toISOString()
+    };
+
+    if (scope === "overall") {
+        record.overall = updated;
+    } else {
+        record.yearly[slot] = updated;
+    }
+
+    record.history.push(updated);
+
+    all[key] = record;
+
+    await chrome.storage.local.set({
+        [BSG_STRATEGY_STORAGE_KEY]: all
+    });
+
+    return updated;
+}
+
+
+async function getCompactStrategyContext(industry) {
+    const data = (await chrome.storage.local.get(BSG_STRATEGY_STORAGE_KEY))[BSG_STRATEGY_STORAGE_KEY] || {};
+    const record = data[`industry_${industry}`];
+
+    if (!record) {
+        return null;
+    }
+
+    const years = Object.keys(record.yearly || {})
+        .map(k => Number(k.replace("year_", "")))
+        .filter(Number.isInteger);
+
+    const latest = years.length
+        ? record.yearly[`year_${Math.max(...years)}`]
+        : null;
+
+    // Explicitly bounded to avoid ballooning request context.
+    const compact = {
+        overall: record.overall
+            ? {
+                version: record.overall.version,
+                strategy: record.overall.strategy
+            }
+            : null,
+
+        latestYearly: latest
+            ? {
+                year: latest.year,
+                version: latest.version,
+                strategy: latest.strategy
+            }
+            : null
+    };
+
+    const serialized = JSON.stringify(compact);
+
+    if (serialized.length <= 9000) {
+        return serialized;
+    }
+
+    // Preserve valid JSON even when a stored strategy exceeds the context budget.
+    // Full strategies remain accessible through the dedicated retrieval tools.
+    const bounded = {
+        truncated: true,
+
+        overall: compact.overall
+            ? {
+                version: compact.overall.version,
+                strategyPreview: JSON.stringify(compact.overall.strategy).slice(0, 4000)
+            }
+            : null,
+
+        latestYearly: compact.latestYearly
+            ? {
+                year: compact.latestYearly.year,
+                version: compact.latestYearly.version,
+                strategyPreview: JSON.stringify(compact.latestYearly.strategy).slice(0, 4000)
+            }
+            : null
+    };
+
+    return JSON.stringify(bounded);
+}
