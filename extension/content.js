@@ -9771,9 +9771,32 @@ function parseCompensationTrainingPage(
                 label
             );
 
+        
         if (!row) {
-            return null;
+            console.warn(
+                `[Compensation Training] Missing prior-year metric: ${label}`
+            );
+
+            return {
+                northAmerica: {
+                    industryAverage: null,
+                    companyH: null
+                },
+                europeAfrica: {
+                    industryAverage: null,
+                    companyH: null
+                },
+                asiaPacific: {
+                    industryAverage: null,
+                    companyH: null
+                },
+                latinAmerica: {
+                    industryAverage: null,
+                    companyH: null
+                }
+            };
         }
+
 
         const values =
             row
@@ -9901,9 +9924,32 @@ function parseCompensationTrainingPage(
         const row =
             table?.rows?.[2];
 
+        
         if (!row) {
-            return null;
+            console.warn(
+                "[Compensation Training] Missing prior-year supervisory compensation"
+            );
+
+            return {
+                northAmerica: {
+                    industryAverage: null,
+                    companyH: null
+                },
+                europeAfrica: {
+                    industryAverage: null,
+                    companyH: null
+                },
+                asiaPacific: {
+                    industryAverage: null,
+                    companyH: null
+                },
+                latinAmerica: {
+                    industryAverage: null,
+                    companyH: null
+                }
+            };
         }
+
 
         const values =
             row
