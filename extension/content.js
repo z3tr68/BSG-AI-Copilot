@@ -12274,6 +12274,122 @@ function parseCelebrityEndorsementsPage(
 }
 
 
+function parseQuizPage(data) {
+    const clean = value =>
+        String(value ?? "")
+            .replace(/\s+/g, " ")
+            .trim();
+
+    const visible = element =>
+        Boolean(element?.getClientRects().length) &&
+        getComputedStyle(element).visibility !== "hidden";
+
+    const getLabel = element => {
+        if (element.id) {
+            const label = Array.from(
+                document.querySelectorAll("label[for]")
+            ).find(item => item.htmlFor === element.id);
+
+            if (label) return clean(label.innerText);
+        }
+
+        const parentLabel = element.closest("label");
+        if (parentLabel) {
+            return clean(parentLabel.innerText);
+        }
+
+        return clean(
+            element.getAttribute("aria-label") ||
+            element.parentElement?.innerText ||
+            ""
+        );
+    };
+
+    const root =
+        document.querySelector("main") ||
+        document.querySelector('[role="main"]') ||
+        document.querySelector("form") ||
+        document.body;
+
+    const controls = Array.from(
+        root.querySelectorAll("input, select, textarea")
+    )
+    .filter(element =>
+        visible(element) &&
+        !["hidden", "password"].includes(element.type)
+    )
+    .map((element, index) => ({
+        index,
+        tag: element.tagName.toLowerCase(),
+        type: element.type || null,
+        id: element.id || null,
+        name: element.name || null,
+        label: getLabel(element).slice(0, 500),
+        value: element.type === "radio" ||
+               element.type === "checkbox"
+            ? element.value
+            : element.value,
+        checked: ["radio", "checkbox"].includes(element.type)
+            ? element.checked
+            : null,
+        options: element.tagName === "SELECT"
+            ? Array.from(element.options).map(option => ({
+                value: option.value,
+                text: clean(option.textContent),
+                selected: option.selected
+            }))
+            : null
+    }));
+
+    const groups = Array.from(
+        root.querySelectorAll(
+            "fieldset, [role='group'], [role='radiogroup']"
+        )
+    )
+    .filter(visible)
+    .map((group, index) => ({
+        index,
+        text: clean(group.innerText).slice(0, 4000),
+        controlNames: Array.from(
+            group.querySelectorAll("[name]")
+        ).map(element => element.name)
+    }));
+
+    const images = Array.from(
+        root.querySelectorAll("img")
+    )
+    .filter(visible)
+    .map(image => ({
+        alt: image.alt || "",
+        src: image.currentSrc || image.src || ""
+    }));
+
+    const pageText = clean(root.innerText);
+
+    const quizMode =
+        /REVIEW ONLY/i.test(pageText)
+            ? "review"
+            : window.location.pathname.includes("/simQuiz")
+                ? "listing"
+                : "active";
+
+    return {
+        page: "quiz",
+        pageType: "quiz",
+        quizMode,
+        url: window.location.href,
+        title: document.title,
+        visibleText: clean(root.innerText).slice(0, 50000),
+        groups,
+        controls,
+        images,
+        tables: data.tables || [],
+        extractionMode: "read_only",
+        capturedAt: new Date().toISOString()
+    };
+}
+
+
 
 // #endregion
 
@@ -12774,7 +12890,19 @@ function extractBSGData(
             );
 
     }
-    //end of routes
+
+    
+    if (
+        window.location.pathname.includes(
+            "/quest"
+        )
+    ) {
+
+        data.currentRound = 
+            parseQuizPage(
+                data
+        );
+    }
 
     if (
             data.currentRound &&

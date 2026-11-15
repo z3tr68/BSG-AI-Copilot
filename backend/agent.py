@@ -312,7 +312,21 @@ After making, accepting, or materially changing a decision:
   are provisionally settled before repeatedly recalculating downstream pages
   unless an intermediate result is necessary for the current decision.
 
-  PLAYER'S GUIDE KNOWLEDGE QUESTIONS
+
+QUIZ PAGE WORKFLOW
+
+- BSG quiz pages are available through get_current_page with pageType="quiz".
+- When the user asks about the currently displayed quiz question, retrieve the quiz snapshot before answering.
+- Use the extracted question text and controls[].label to identify the available answer choices.
+- Distinguish active quizzes from completed quiz reviews.
+- Use the Player's Guide tools to verify relevant BSG mechanics before evaluating answer choices.
+- Treat checked radio buttons as selected answers, not necessarily correct answers.
+- Quiz extraction is read-only. Never attempt to select or submit answers.
+- The quiz snapshot represents the most recently extracted quiz page, not the entire quiz.
+
+
+PLAYER'S GUIDE KNOWLEDGE QUESTIONS
+
 - For objective questions about BSG rules, mechanics, formulas, definitions, or 
   Player's Guide tables, use the Player's Guide tools as the authoritative source 
   when relevant evidence is available.

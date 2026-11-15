@@ -119,10 +119,11 @@ BSG_TOOLS = cast(
             "type": "function",
             "name": "get_current_page",
             "description": (
-                "Retrieve the latest extracted snapshot for one specific current live "
-                "decision page. A specific pageType is required. This tool cannot retrieve "
-                "all current decision pages at once. Request additional pages separately "
-                "only when they are necessary for the current analysis. "
+                "Retrieve the latest extracted snapshot for one specific BSG page"
+                "including current live decision pages and quiz pages. A specific "
+                "pageType is required. This tool cannot retrieve "
+                "all page snapshots at once. Request additional pages separately "
+                "only when they are necessary for the current task. "
             ),
 
             "parameters": {
@@ -133,11 +134,14 @@ BSG_TOOLS = cast(
                     "pageType": {
                         "type": "string",
                         "description": (
-                            "Optional decision-page type, such as 'internet_marketing' or "
-                            "'compensation_training'. When the task concerns a specific page, "
-                            "provide that page type. Omit only when intentionally discovering "
-                            "which current-round page snapshots are available."
-                            )
+                            "Current-page snapshot type, including "
+                            "'quiz', 'internet_marketing', "
+                            "'wholesale_marketing', 'finance', "
+                            "and other supported BSG pages. "
+                            "Use 'quiz' to retrieve the most recently "
+                            "extracted quiz page, including its "
+                            "question text and answer choices."
+                        )
                     }
                 },
 
